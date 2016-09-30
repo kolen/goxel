@@ -425,11 +425,16 @@ void goxel_render_view(goxel_t *goxel, const vec4_t *rect)
 {
     layer_t *layer;
     renderer_t *rend = &goxel->rend;
-    texture_t *texture;
+    texture_t *tex;
 
     goxel->camera.aspect = rect->z / rect->w;
     camera_update(&goxel->camera);
-    render_mesh(rend, goxel->full_mesh, 0);
+
+    tex = goxel->raytracer ? raytracer_get_texture(goxel->raytracer) : NULL;
+    if (tex)
+        render_img(rend, tex, NULL);
+    else
+        render_mesh(rend, goxel->full_mesh, 0);
 
     // Render all the image layers.
     DL_FOREACH(goxel->image->layers, layer) {
@@ -467,9 +472,6 @@ void goxel_render_view(goxel_t *goxel, const vec4_t *rect)
             raytracer_start(goxel->raytracer, goxel->layers_mesh,
                     &goxel->camera, rect->z, rect->w);
         }
-        texture = raytracer_get_texture(goxel->raytracer);
-        if (texture)
-            render_img(rend, texture, NULL);
     }
 }
 
