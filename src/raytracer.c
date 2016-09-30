@@ -1,9 +1,12 @@
 #include "goxel.h"
 #include "pthread.h"
 
+void export_as_pov(goxel_t *goxel, const char *path, int w, int h);
+
 enum {
     RT_READY = 0,
     RT_RUNNING,
+    RT_CANCELED,
     RT_DONE,
 };
 
@@ -39,8 +42,11 @@ static void *thread_func(void *args)
     LOG_D("%s", cmd);
     system(cmd);
     LOG_D("thread_func finished");
-    rt->state = RT_DONE;
 
+    if (rt->state == RT_CANCELED)
+        rt->state = RT_READY;
+    else
+        rt->state = RT_DONE;
     return NULL;
 }
 
@@ -54,24 +60,21 @@ void raytracer_start(raytracer_t *rt, const mesh_t *mesh,
     rt->pov_path = "/tmp/out.pov";
     rt->png_path = "/tmp/out.png";
 
-    LOG_D("rt start %d %d", w, h);
     texture_delete(rt->texture);
     rt->texture = NULL;
-    // XXX: we should pass the mesh here!
-    action_exec2("export_as_pov",
-                 ARG("path", rt->pov_path),
-                 ARG("width", w),
-                 ARG("height", h));
+
+    export_as_pov(goxel(), rt->pov_path, w, h);
     pthread_create(&rt->thread, NULL, thread_func, rt);
 }
 
 void raytracer_stop(raytracer_t *rt)
 {
-    if (rt->state == RT_DONE) {
+    texture_delete(rt->texture);
+    rt->texture = NULL;
+    if (rt->state == RT_RUNNING)
+        rt->state = RT_CANCELED;
+    if (rt->state == RT_DONE)
         rt->state = RT_READY;
-        texture_delete(rt->texture);
-        rt->texture = NULL;
-    }
 }
 
 texture_t *raytracer_get_texture(raytracer_t *rt)

@@ -20,8 +20,7 @@
 
 #include "goxel.h"
 
-static void export_as_pov(goxel_t *goxel, const char *path,
-                          int w, int h)
+void export_as_pov(goxel_t *goxel, const char *path, int w, int h)
 {
     FILE *file;
     layer_t *layer;

@@ -947,7 +947,9 @@ typedef struct goxel
     raytracer_t *raytracer; // Used for rendering (optional).
     // We start the raytracing automatically when the visible mesh stays
     // the same for a while.
-    int         raytracer_mesh_id;
+    // XXX: use a generic way to find out if anything has changed.
+    int         raytracer_layers_mesh_id;
+    int         raytracer_full_mesh_id;
     int         raytracer_mesh_id_timer; // Use actual time?
 
     palette_t  *palettes;   // The list of all the palettes

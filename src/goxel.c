@@ -462,8 +462,10 @@ void goxel_render_view(goxel_t *goxel, const vec4_t *rect)
 
     // Check if we should start a raytracing of the current mesh.
     if (goxel->raytracer) {
-        if (goxel->full_mesh->id != goxel->raytracer_mesh_id) {
-            goxel->raytracer_mesh_id = goxel->full_mesh->id;
+        if (    goxel->full_mesh->id != goxel->raytracer_full_mesh_id ||
+                goxel->layers_mesh->id != goxel->raytracer_layers_mesh_id) {
+            goxel->raytracer_full_mesh_id = goxel->full_mesh->id;
+            goxel->raytracer_layers_mesh_id = goxel->layers_mesh->id;
             goxel->raytracer_mesh_id_timer = 0;
             raytracer_stop(goxel->raytracer);
         }
