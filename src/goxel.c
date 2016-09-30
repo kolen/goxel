@@ -234,6 +234,7 @@ void goxel_init(goxel_t *goxel)
     goxel->full_mesh = mesh_new();
     goxel_update_meshes(goxel, -1);
     goxel->selection = box_null;
+    goxel->raytracer = raytracer_create();
 
     goxel->back_color = HEXCOLOR(0x393939ff);
     goxel->grid_color = HEXCOLOR(0x4a4a4aff);
@@ -424,6 +425,7 @@ void goxel_render_view(goxel_t *goxel, const vec4_t *rect)
 {
     layer_t *layer;
     renderer_t *rend = &goxel->rend;
+    texture_t *texture;
 
     goxel->camera.aspect = rect->z / rect->w;
     camera_update(&goxel->camera);
@@ -452,6 +454,23 @@ void goxel_render_view(goxel_t *goxel, const vec4_t *rect)
         render_plane(rend, &goxel->plane, &goxel->grid_color);
     if (goxel->show_export_viewport)
         render_export_viewport(goxel, rect);
+
+    // Check if we should start a raytracing of the current mesh.
+    if (goxel->raytracer) {
+        if (goxel->full_mesh->id != goxel->raytracer_mesh_id) {
+            goxel->raytracer_mesh_id = goxel->full_mesh->id;
+            goxel->raytracer_mesh_id_timer = 0;
+            raytracer_stop(goxel->raytracer);
+        }
+        if (goxel->raytracer_mesh_id_timer++ == 60 &&
+                raytracer_is_ready(goxel->raytracer)) {
+            raytracer_start(goxel->raytracer, goxel->layers_mesh,
+                    &goxel->camera, rect->z, rect->w);
+        }
+        texture = raytracer_get_texture(goxel->raytracer);
+        if (texture)
+            render_img(rend, texture, NULL);
+    }
 }
 
 void goxel_update_meshes(goxel_t *goxel, int mask)

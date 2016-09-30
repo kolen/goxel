@@ -872,6 +872,19 @@ void camera_update(camera_t *camera);
 void camera_get_ray(const camera_t *camera, const vec2_t *win,
                     const vec4_t *view, vec3_t *o, vec3_t *d);
 
+// #############################
+// Raytracer.  Still experimental.
+
+typedef struct raytracer raytracer_t;
+
+raytracer_t *raytracer_create(void);
+bool raytracer_is_ready(const raytracer_t *rt);
+void raytracer_start(raytracer_t *rt, const mesh_t *mesh,
+                     const camera_t *cam, int w, int h);
+void raytracer_stop(raytracer_t *rt);
+texture_t *raytracer_get_texture(raytracer_t *rt);
+
+
 typedef struct goxel
 {
     vec2i_t    screen_size;
@@ -930,6 +943,12 @@ typedef struct goxel
     bool       painting;    // Set to true when we are in a painting operation.
     bool       moving;      // Set to true while in a movement operation.
     gox_proc_t proc;        // The current procedural rendering (if any).
+
+    raytracer_t *raytracer; // Used for rendering (optional).
+    // We start the raytracing automatically when the visible mesh stays
+    // the same for a while.
+    int         raytracer_mesh_id;
+    int         raytracer_mesh_id_timer; // Use actual time?
 
     palette_t  *palettes;   // The list of all the palettes
     palette_t  *palette;    // The current color palette
