@@ -1,6 +1,17 @@
 // Generated from goxel {{version}}
 // https://github.com/guillaumechereau/goxel
 
+#default {
+    finish {
+        {{#mat}}
+        ambient {{ambient}}
+        diffuse {{diffuse}}
+        specular {{specular}}
+        roughness {{roughness}}
+        {{/mat}}
+    }
+}
+
 {{#camera}}
 camera {
     perspective
@@ -25,9 +36,12 @@ camera {
 #end
 
 {{#light}}
-global_settings { ambient_light rgb<1, 1, 1> * {{ambient}} }
+global_settings {
+    assumed_gamma 2.2
+}
+
 light_source {
-    <0, 0, 1024> color rgb <2, 2, 2>
+    <0, 0, 1024> color rgb <1, 1, 1>
     parallel
     point_at {{point_at}}
 }

@@ -6631,10 +6631,21 @@ static const uint8_t DATA_data_icon_png[133981]
     68,174,66,96,130,
 };
 
-static const uint8_t DATA_data_povray_template_pov[748]
+static const uint8_t DATA_data_povray_template_pov[963]
                      __attribute__((aligned(4))) =
     "// Generated from goxel {{version}}\n"
     "// https://github.com/guillaumechereau/goxel\n"
+    "\n"
+    "#default {\n"
+    "    finish {\n"
+    "        {{#mat}}\n"
+    "        ambient {{ambient}}\n"
+    "        diffuse {{diffuse}}\n"
+    "        specular {{specular}}\n"
+    "        roughness {{roughness}}\n"
+    "        {{/mat}}\n"
+    "    }\n"
+    "}\n"
     "\n"
     "{{#camera}}\n"
     "camera {\n"
@@ -6660,9 +6671,13 @@ static const uint8_t DATA_data_povray_template_pov[748]
     "#end\n"
     "\n"
     "{{#light}}\n"
-    "global_settings { ambient_light rgb<1, 1, 1> * {{ambient}} }\n"
+    "global_settings {\n"
+    "    assumed_gamma 2.2\n"
+    "    // ambient_light rgb<1, 1, 1> * {{ambient}}\n"
+    "}\n"
+    "\n"
     "light_source {\n"
-    "    <0, 0, 1024> color rgb <2, 2, 2>\n"
+    "    <0, 0, 1024> color rgb <1, 1, 1>\n"
     "    parallel\n"
     "    point_at {{point_at}}\n"
     "}\n"
@@ -9770,7 +9785,7 @@ static asset_t ASSETS[] = {
     {
         .path = "data/povray_template.pov",
         .data = DATA_data_povray_template_pov,
-        .size = 748,
+        .size = 963,
     },
 
     {

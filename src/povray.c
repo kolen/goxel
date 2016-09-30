@@ -31,7 +31,7 @@ void export_as_pov(goxel_t *goxel, const char *path, int w, int h)
     uvec4b_t v;
     mat4_t modelview;
     vec3_t light_dir;
-    mustache_t *m, *m_cam, *m_light, *m_voxels, *m_voxel;
+    mustache_t *m, *m_cam, *m_light, *m_voxels, *m_voxel, *m_mat;
     camera_t camera = goxel->camera;
 
     template = assets_get("asset://data/povray_template.pov", NULL);
@@ -40,8 +40,6 @@ void export_as_pov(goxel_t *goxel, const char *path, int w, int h)
     camera_update(&camera);
 
     modelview = camera.view_mat;
-    // cam_to_view = mat4_inverted(camera.view_mat);
-    // cam_look_at = mat4_mul_vec(cam_to_view, vec4(0, 0, -1, 1)).xyz;
     light_dir = render_get_light_dir(&goxel->rend);
 
     m = mustache_root();
@@ -57,10 +55,18 @@ void export_as_pov(goxel_t *goxel, const char *path, int w, int h)
                      modelview.v[8], modelview.v[9], modelview.v[10],
                      modelview.v[12], modelview.v[13], modelview.v[14]);
     m_light = mustache_add_dict(m, "light");
-    mustache_add_str(m_light, "ambient", "%.2f",
-                     goxel->rend.settings.ambient);
     mustache_add_str(m_light, "point_at", "<%.1f, %.1f, %.1f + 1024>",
                      -light_dir.x, -light_dir.y, -light_dir.z);
+
+    m_mat = mustache_add_dict(m, "mat");
+    mustache_add_str(m_mat, "ambient", "%.2f",
+                     goxel->rend.settings.ambient);
+    mustache_add_str(m_mat, "diffuse", "%.2f",
+                     goxel->rend.settings.diffuse);
+    mustache_add_str(m_mat, "specular", "%.2f",
+                     goxel->rend.settings.specular);
+    mustache_add_str(m_mat, "roughness", "%.3f",
+                     0.25 / goxel->rend.settings.shininess);
 
     m_voxels = mustache_add_list(m, "voxels");
     DL_FOREACH(goxel->image->layers, layer) {
