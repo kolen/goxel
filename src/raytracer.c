@@ -1,5 +1,8 @@
 #include "goxel.h"
-#include "pthread.h"
+#include <pthread.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 void export_as_pov(goxel_t *goxel, const char *path, int w, int h);
 
@@ -33,15 +36,33 @@ bool raytracer_is_ready(const raytracer_t *rt)
 
 static void *thread_func(void *args)
 {
+    pid_t pid;
     raytracer_t *rt = args;
-    char cmd[256];
+    int error, status;
+    char *argv[12] = {};
+    FILE *out;
 
-    LOG_D("thread_func start");
-    sprintf(cmd, "povray -W%d -H%d +A0.1 -D +UA +O%s %s",
-            rt->w, rt->h, rt->png_path, rt->pov_path);
-    LOG_D("%s", cmd);
-    system(cmd);
-    LOG_D("thread_func finished");
+    if ((pid = fork()) == 0) {
+        out = fopen("/tmp/out.txt", "w");
+        dup2(fileno(out), STDOUT_FILENO);
+        dup2(fileno(out), STDERR_FILENO);
+        fclose(out);
+        asprintf(&argv[0], "/usr/bin/povray");
+        asprintf(&argv[1], "-W%d", rt->w);
+        asprintf(&argv[2], "-H%d", rt->h);
+        asprintf(&argv[3], "+A0.1");
+        asprintf(&argv[4], "-D");
+        asprintf(&argv[5], "+UA");
+        asprintf(&argv[6], "+O%s", rt->png_path);
+        asprintf(&argv[7], "%s", rt->pov_path);
+        error = execv(argv[0], (void*)argv);
+        exit(error);
+    }
+    assert(pid > 0);
+
+    waitpid(pid, &status, 0);
+    if (WEXITSTATUS(status))
+        LOG_E("povray exit: %d", WEXITSTATUS(status));
 
     if (rt->state == RT_CANCELED)
         rt->state = RT_READY;
