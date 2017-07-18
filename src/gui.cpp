@@ -1037,6 +1037,9 @@ static void render_menu(void)
     bool popup_shift_alpha = false;
     bool popup_settings = false;
 
+    ImGui::PushStyleColor(ImGuiCol_PopupBg, COLOR(MENU, INNER, 0));
+    ImGui::PushStyleColor(ImGuiCol_Text, COLOR(MENU, TEXT, 0));
+
     if (!ImGui::BeginMenuBar()) return;
     if (ImGui::BeginMenu("File")) {
         render_menu_item("save", "Save");
@@ -1085,6 +1088,8 @@ static void render_menu(void)
     if (popup_about) ImGui::OpenPopup("About");
     if (popup_shift_alpha) ImGui::OpenPopup("Shift Alpha");
     if (popup_settings) ImGui::OpenPopup("Settings");
+
+    ImGui::PopStyleColor(2);
 }
 
 static bool render_tab(const char *label, bool *v)
@@ -1093,9 +1098,6 @@ static bool render_tab(const char *label, bool *v)
     const ImFont::Glyph *glyph;
     char c;
     bool ret;
-    ImGuiContext& g = *GImGui;
-    const ImGuiStyle& style = g.Style;
-    uint32_t text_color;
     const theme_t *theme = theme_get();
     int pad = theme->sizes.item_padding_h;
     uvec4b_t color;
@@ -1115,8 +1117,6 @@ static bool render_tab(const char *label, bool *v)
                   false, 0x09);
 
     ImGui::PopStyleColor();
-    text_color = ImGui::ColorConvertFloat4ToU32(
-            style.Colors[ImGuiCol_Text]);
     while ((c = *label++)) {
         glyph = font->FindGlyph(c);
         if (!glyph) continue;
@@ -1132,7 +1132,7 @@ static bool render_tab(const char *label, bool *v)
                 ImVec2(glyph->U1, glyph->V0),
                 ImVec2(glyph->U1, glyph->V1),
                 ImVec2(glyph->U0, glyph->V1),
-                text_color);
+                ImGui::ColorConvertFloat4ToU32(COLOR(TAB, TEXT, *v)));
         pos.y -= glyph->XAdvance;
     }
     ImGui::PopID();
@@ -1189,7 +1189,7 @@ void gui_iter(goxel_t *goxel, const inputs_t *inputs)
         color_lighten(COLOR(BASE, INNER, 0), 1.2);
     style.Colors[ImGuiCol_CheckMark] = IMHEXCOLOR(0x00000AA);
     style.Colors[ImGuiCol_ComboBg] = IMHEXCOLOR(0x727272FF);
-    style.Colors[ImGuiCol_MenuBarBg] = COLOR(BASE, BACKGROUND, 0);
+    style.Colors[ImGuiCol_MenuBarBg] = COLOR(MENU, BACKGROUND, 0);
     style.Colors[ImGuiCol_Border] = COLOR(BASE, OUTLINE, 0);
 
     ImGui::NewFrame();
