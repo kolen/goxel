@@ -9,6 +9,7 @@ By Guillaume Chereau <guillaume@noctua-software.com>
 [![Build Status](
     https://travis-ci.org/guillaumechereau/goxel.svg?branch=master)](
     https://travis-ci.org/guillaumechereau/goxel)
+[![DebianBadge](https://badges.debian.net/badges/debian/unstable/goxel/version.svg)](https://packages.debian.org/unstable/goxel)
 
 Webpage: https://guillaumechereau.github.io/goxel
 
