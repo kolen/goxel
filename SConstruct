@@ -97,6 +97,41 @@ sources += glob.glob('ext_src/inih/*.c')
 env.Append(CPPPATH=['ext_src/inih'])
 env.Append(CFLAGS='-DINI_HANDLER_LINENO=1')
 
+# Cycles rendering support.
+sources += glob.glob('ext_src/cycles/src/util/*.cpp')
+sources = [x for x in sources if not x.endswith('util_view.cpp')]
+sources += glob.glob('ext_src/cycles/src/bvh/*.cpp')
+sources += glob.glob('ext_src/cycles/src/render/*.cpp')
+sources += glob.glob('ext_src/cycles/src/graph/*.cpp')
+sources = [x for x in sources if not x.endswith('node_xml.cpp')]
+
+sources += glob.glob('ext_src/cycles/src/device/device.cpp')
+sources += glob.glob('ext_src/cycles/src/device/device_cpu.cpp')
+sources += glob.glob('ext_src/cycles/src/device/device_memory.cpp')
+sources += glob.glob('ext_src/cycles/src/device/device_denoising.cpp')
+sources += glob.glob('ext_src/cycles/src/device/device_split_kernel.cpp')
+sources += glob.glob('ext_src/cycles/src/device/device_task.cpp')
+
+sources += glob.glob('ext_src/cycles/src/kernel/kernels/cpu/*.cpp')
+sources += glob.glob('ext_src/cycles/src/subd/*.cpp')
+
+env.Append(CPPPATH=['ext_src/cycles/src'])
+env.Append(CPPPATH=['ext_src/cycles/third_party/atomic'])
+# env.Append(CPPPATH=['ext_src/cycles/third_party/cuew/include'])
+env.Append(CPPFLAGS=[
+    '-DCYCLES_STD_UNORDERED_MAP',
+    '-DCCL_NAMESPACE_BEGIN=namespace ccl {',
+    '-DCCL_NAMESPACE_END=}',
+    '-DWITH_CUDA_DYNLOAD',
+])
+env.Append(CPPFLAGS=['-Wno-sign-compare', '-Wno-strict-aliasing',
+                     '-Wno-maybe-uninitialized', '-Wno-uninitialized'])
+env.Append(LIBS=['glut', 'OpenImageIO', 'pugixml'])
+sources += glob.glob('ext_src/glew/glew.c')
+env.Append(CPPPATH=['ext_src/glew'])
+env.Append(CCFLAGS='-DGLEW_STATIC')
+
+
 if target_os == 'posix':
     env.ParseConfig('pkg-config --cflags --libs gtk+-3.0')
 
