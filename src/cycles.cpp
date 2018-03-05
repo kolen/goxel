@@ -20,12 +20,14 @@
 #include "render/camera.h"
 #include "render/film.h"
 #include "render/graph.h"
+#include "render/light.h"
 #include "render/mesh.h"
 #include "render/nodes.h"
 #include "render/object.h"
 #include "render/session.h"
 #include "render/shader.h"
 #include "util/util_transform.h"
+#include "util/util_foreach.h"
 
 #include <memory> // for make_unique
 
@@ -114,7 +116,7 @@ ccl::Mesh *create_cube(float size)
             ccl::ATTR_ELEMENT_CORNER_BYTE);
     idata = attr->data_uchar4();
     for (int i = 0; i < 6 * 6; i++)
-        idata[i] = ccl::make_uchar4(128, 255, 0, 255);
+        idata[i] = ccl::make_uchar4(128, 128, 0, 255);
 
     return mesh;
 }
@@ -133,20 +135,46 @@ static ccl::Shader *create_cube_shader(void)
                          S("Col"));
     shaderGraph->add(colorShaderNode);
 
+    const ccl::NodeType *diffuseBSDFNodeType = ccl::NodeType::find(S("diffuse_bsdf"));
+    ccl::ShaderNode *diffuseBSDFShaderNode = static_cast<ccl::ShaderNode*>(
+            diffuseBSDFNodeType->create(diffuseBSDFNodeType));
+    diffuseBSDFShaderNode->name = "diffuseBSDFNode";
+    shaderGraph->add(diffuseBSDFShaderNode);
+
+    shaderGraph->connect(
+        colorShaderNode->output("Color"),
+        diffuseBSDFShaderNode->input("Color")
+    );
+    shaderGraph->connect(
+        diffuseBSDFShaderNode->output("BSDF"),
+        shaderGraph->output()->input("Surface")
+    );
+
+    shader->set_graph(shaderGraph);
+    return shader;
+}
+
+static ccl::Shader *create_light_shader(void)
+{
+    ccl::Shader *shader = new ccl::Shader();
+    shader->name = "lightShader";
+    ccl::ShaderGraph *shaderGraph = new ccl::ShaderGraph();
+
     const ccl::NodeType *emissionNodeType = ccl::NodeType::find(S("emission"));
     ccl::ShaderNode *emissionShaderNode = static_cast<ccl::ShaderNode*>(
             emissionNodeType->create(emissionNodeType));
     emissionShaderNode->name = "emissionNode";
     emissionShaderNode->set(
         *emissionShaderNode->type->find_input(S("strength")),
-        1.0f
+        1000.0f
     );
+    emissionShaderNode->set(
+        *emissionShaderNode->type->find_input(S("color")),
+        ccl::make_float3(0.8, 0.8, 0.8)
+    );
+
     shaderGraph->add(emissionShaderNode);
 
-    shaderGraph->connect(
-        colorShaderNode->output("Color"),
-        emissionShaderNode->input("Color")
-    );
     shaderGraph->connect(
         emissionShaderNode->output("Emission"),
         shaderGraph->output()->input("Surface")
@@ -215,6 +243,22 @@ void cycles_init(void)
         ccl::transform_rotate(40.0f * 3.14f / 180.0f,
                               ccl::make_float3(1.0f, 1.0f, 1.0f));
     scene->objects.push_back(object);
+
+    ccl::Light *light = new ccl::Light();
+    /*
+    foreach(const ccl::SocketType& socket, ((ccl::Node*)light)->type->inputs) {
+        LOG_D("XXX %s", socket.name.c_str());
+    }
+    */
+
+    light->set(*((ccl::Node*)light)->type->find_input(S("co")),
+               ccl::make_float3(0, 0, -3));
+
+    ccl::Shader *light_shader = create_light_shader();
+    light_shader->tag_update(scene);
+    scene->shaders.push_back(light_shader);
+    light->shader = light_shader;
+    scene->lights.push_back(light);
 
     scene->camera->need_update = true;
     scene->camera->need_device_update = true;
