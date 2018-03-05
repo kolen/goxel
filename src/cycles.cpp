@@ -178,10 +178,10 @@ void cycles_init(void)
     session_params.samples = 20;
     // session_params.threads = 1;
 
-    g_buffer_params.width = 128;
-    g_buffer_params.height = 128;
-    g_buffer_params.full_width = 128;
-    g_buffer_params.full_height = 128;
+    g_buffer_params.width = 256;
+    g_buffer_params.height = 256;
+    g_buffer_params.full_width = 256;
+    g_buffer_params.full_height = 256;
 
     g_session = new ccl::Session(session_params);
 
@@ -189,8 +189,8 @@ void cycles_init(void)
     // scene_params.shadingsystem = ccl::SHADINGSYSTEM_SVM;
 
     scene = new ccl::Scene(scene_params, g_session->device);
-    scene->camera->width = 128;
-    scene->camera->height = 128;
+    scene->camera->width = 256;
+    scene->camera->height = 256;
     scene->camera->fov = ccl::radians(45.0);
     scene->camera->type = ccl::CameraType::CAMERA_PERSPECTIVE;
     scene->camera->full_width = scene->camera->width;
@@ -200,12 +200,11 @@ void cycles_init(void)
     scene->camera->matrix = ccl::transform_identity()
         * ccl::transform_translate(ccl::make_float3(0.0f, 0.0f, -3.0f));
 
-    // Add a cube
-    ccl::Mesh *mesh = create_cube(1.0);
-
     ccl::Shader *object_shader = create_cube_shader();
     object_shader->tag_update(scene);
     scene->shaders.push_back(object_shader);
+
+    ccl::Mesh *mesh = create_cube(1.0);
     mesh->used_shaders.push_back(object_shader);
     scene->meshes.push_back(mesh);
 
@@ -228,7 +227,7 @@ void cycles_init(void)
 void cycles_render(void)
 {
     static ccl::DeviceDrawParams draw_params = ccl::DeviceDrawParams();
-    GL(glViewport(256, 128, 128, 128));
+    GL(glViewport(256, 128, 256, 256));
     GL(glMatrixMode(GL_PROJECTION));
     GL(glLoadIdentity());
     GL(glOrtho(0, g_buffer_params.width, 0, g_buffer_params.height, -1, 1));
