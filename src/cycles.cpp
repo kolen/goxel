@@ -167,7 +167,7 @@ static ccl::Shader *create_light_shader(void)
     emissionShaderNode->name = "emissionNode";
     emissionShaderNode->set(
         *emissionShaderNode->type->find_input(S("strength")),
-        1000.0f
+        10000.0f
     );
     emissionShaderNode->set(
         *emissionShaderNode->type->find_input(S("color")),
@@ -185,58 +185,56 @@ static ccl::Shader *create_light_shader(void)
     return shader;
 }
 
-static ccl::Mesh *create_mesh(const mesh_t *mesh)
+static ccl::Mesh *create_mesh_for_block(
+        const mesh_t *mesh, const int block_pos[3])
 {
-    ccl::Mesh *ret = new ccl::Mesh();
-    mesh_iterator_t iter;
-    int block_pos[3], nb = 0, i, j;
+    ccl::Mesh *ret = NULL;
+    int nb = 0, i, j;
     voxel_vertex_t* vertices;
     ccl::Attribute *attr;
 
+    ret = new ccl::Mesh();
     ret->subdivision_type = ccl::Mesh::SUBDIVISION_NONE;
-
-    iter = mesh_get_iterator(mesh,
-            MESH_ITER_BLOCKS | MESH_ITER_INCLUDES_NEIGHBORS);
 
     vertices = (voxel_vertex_t*)calloc(
             BLOCK_SIZE * BLOCK_SIZE * BLOCK_SIZE * 6 * 4, sizeof(*vertices));
-    while (mesh_iter(&iter, block_pos)) {
-        nb = mesh_generate_vertices(mesh, block_pos, 0, vertices);
-        if (!nb) continue;
-        ret->reserve_mesh(nb * 4, nb * 2);
-        for (i = 0; i < nb; i++) { // Once per quad.
-            for (j = 0; j < 4; j++) {
-                ret->add_vertex(ccl::make_float3(
-                            vertices[i * 4 + j].pos[0],
-                            vertices[i * 4 + j].pos[1],
-                            vertices[i * 4 + j].pos[2]));
-            }
-            ret->add_triangle(i * 4 + 0, i * 4 + 1, i * 4 + 2, 0, false);
-            ret->add_triangle(i * 4 + 2, i * 4 + 3, i * 4 + 0, 0, false);
+    nb = mesh_generate_vertices(mesh, block_pos, 0, vertices);
+    if (!nb) goto end;
+
+    ret->reserve_mesh(nb * 4, nb * 2);
+    for (i = 0; i < nb; i++) { // Once per quad.
+        for (j = 0; j < 4; j++) {
+            ret->add_vertex(ccl::make_float3(
+                        vertices[i * 4 + j].pos[0],
+                        vertices[i * 4 + j].pos[1],
+                        vertices[i * 4 + j].pos[2]));
         }
-        break; // Only support one block for the moment!!
+        ret->add_triangle(i * 4 + 0, i * 4 + 1, i * 4 + 2, 0, false);
+        ret->add_triangle(i * 4 + 2, i * 4 + 3, i * 4 + 0, 0, false);
     }
 
     // Set color attribute.
-    if (nb) {
-        attr = ret->attributes.add(S("Col"), ccl::TypeDesc::TypeColor,
-                ccl::ATTR_ELEMENT_CORNER_BYTE);
-        for (i = 0; i < nb * 6; i++) {
-            attr->data_uchar4()[i] = ccl::make_uchar4(
-                    vertices[i / 6 * 4].color[0],
-                    vertices[i / 6 * 4].color[1],
-                    vertices[i / 6 * 4].color[2],
-                    vertices[i / 6 * 4].color[3]
-            );
-        }
+    attr = ret->attributes.add(S("Col"), ccl::TypeDesc::TypeColor,
+            ccl::ATTR_ELEMENT_CORNER_BYTE);
+    for (i = 0; i < nb * 6; i++) {
+        attr->data_uchar4()[i] = ccl::make_uchar4(
+                vertices[i / 6 * 4].color[0],
+                vertices[i / 6 * 4].color[1],
+                vertices[i / 6 * 4].color[2],
+                vertices[i / 6 * 4].color[3]
+        );
     }
 
+end:
     free(vertices);
     return ret;
 }
 
 static ccl::Scene *create_scene(void)
 {
+    mesh_t *gmesh = goxel->render_mesh;
+    int block_pos[3];
+    mesh_iterator_t iter;
     ccl::Scene *scene;
     ccl::SceneParams scene_params;
     scene_params.shadingsystem = ccl::SHADINGSYSTEM_OSL;
@@ -245,41 +243,47 @@ static ccl::Scene *create_scene(void)
     scene = new ccl::Scene(scene_params, g_session->device);
     scene->camera->width = 256;
     scene->camera->height = 256;
-    scene->camera->fov = ccl::radians(45.0);
+    scene->camera->fov = ccl::radians(40.0);
     scene->camera->type = ccl::CameraType::CAMERA_PERSPECTIVE;
     scene->camera->full_width = scene->camera->width;
     scene->camera->full_height = scene->camera->height;
     scene->film->exposure = 1.0f;
 
-    scene->camera->matrix = ccl::transform_identity()
-        * ccl::transform_translate(ccl::make_float3(0.0f, 0.0f, -10.0f));
+    // Set camera.
+    // XXX: cleanup!
+    float mat[4][4];
+    float rot[4];
+    assert(sizeof(scene->camera->matrix) == sizeof(mat));
+    mat4_set_identity(mat);
+    mat4_itranslate(mat, -goxel->camera.ofs[0],
+                         -goxel->camera.ofs[1],
+                         -goxel->camera.ofs[2]);
+    quat_copy(goxel->camera.rot, rot);
+    rot[0] *= -1;
+    mat4_imul_quat(mat, rot);
+    mat4_itranslate(mat, 0, 0, goxel->camera.dist);
+    mat4_iscale(mat, 1, 1, -1);
+    mat4_transpose(mat, mat);
+    memcpy(&scene->camera->matrix, mat, sizeof(mat));
 
     ccl::Shader *object_shader = create_cube_shader();
     object_shader->tag_update(scene);
     scene->shaders.push_back(object_shader);
 
-    ccl::Mesh *mesh = create_mesh(goxel->render_mesh);
-    mesh->used_shaders.push_back(object_shader);
-    scene->meshes.push_back(mesh);
-    ccl::Object *object = new ccl::Object();
-    object->name = "mesh";
-    object->mesh = mesh;
-    scene->objects.push_back(object);
-
-    /*
-    for (int i = 0; i < 5; i++) {
-        ccl::Mesh *mesh = create_cube(1.0);
+    iter = mesh_get_iterator(gmesh,
+            MESH_ITER_BLOCKS | MESH_ITER_INCLUDES_NEIGHBORS);
+    while (mesh_iter(&iter, block_pos)) {
+        ccl::Mesh *mesh = create_mesh_for_block(gmesh, block_pos);
         mesh->used_shaders.push_back(object_shader);
         scene->meshes.push_back(mesh);
-
         ccl::Object *object = new ccl::Object();
-        object->name = "cube";
+        object->name = "mesh";
         object->mesh = mesh;
         object->tfm = ccl::transform_identity() *
-            ccl::transform_translate(ccl::make_float3(i * 1.1, 0, 0));
+            ccl::transform_translate(ccl::make_float3(
+                    block_pos[0], block_pos[1], block_pos[2]));
         scene->objects.push_back(object);
     }
-    */
 
     ccl::Light *light = new ccl::Light();
     /*
@@ -289,7 +293,7 @@ static ccl::Scene *create_scene(void)
     */
 
     light->set(*((ccl::Node*)light)->type->find_input(S("co")),
-               ccl::make_float3(0, 0, -3));
+               ccl::make_float3(-5, 10, 20));
 
     ccl::Shader *light_shader = create_light_shader();
     light_shader->tag_update(scene);
