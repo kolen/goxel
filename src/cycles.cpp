@@ -107,23 +107,14 @@ ccl::Mesh *create_cube(float size)
         offset += surfaces[i];
     }
 
-    ccl::Attribute *attr = mesh->attributes.add(ccl::ATTR_STD_UV, S("UVMap"));
-    ccl::float3 *fdata = attr->data_float3();
+    ccl::Attribute *attr;
+    ccl::uchar4 *idata;
 
-    offset = 0;
-    for(size_t i = 0; i < surfaces.size(); i++) {
-
-        fdata[0] = ccl::make_float3(1.0, 1.0, 0.0);
-        fdata[1] = ccl::make_float3(1.0, 0.0, 0.0);
-        fdata[2] = ccl::make_float3(0.0, 0.0, 0.0);
-
-        fdata[3] = ccl::make_float3(1.0, 1.0, 0.0);
-        fdata[4] = ccl::make_float3(0.0, 0.0, 0.0);
-        fdata[5] = ccl::make_float3(0.0, 1.0, 0.0);
-
-        fdata += 6;
-        offset += surfaces[i];
-    }
+    attr = mesh->attributes.add(S("Col"), ccl::TypeDesc::TypeColor,
+            ccl::ATTR_ELEMENT_CORNER_BYTE);
+    idata = attr->data_uchar4();
+    for (int i = 0; i < 6 * 6; i++)
+        idata[i] = ccl::make_uchar4(128, 255, 0, 255);
 
     return mesh;
 }
@@ -134,13 +125,12 @@ static ccl::Shader *create_cube_shader(void)
     shader->name = "cubeShader";
     ccl::ShaderGraph *shaderGraph = new ccl::ShaderGraph();
 
-    const ccl::NodeType *colorNodeType = ccl::NodeType::find(S("color"));
+    const ccl::NodeType *colorNodeType = ccl::NodeType::find(S("attribute"));
     ccl::ShaderNode *colorShaderNode = static_cast<ccl::ShaderNode*>(
             colorNodeType->create(colorNodeType));
     colorShaderNode->name = "colorNode";
-    colorShaderNode->set(
-        *colorShaderNode->type->find_input(S("value")),
-        ccl::make_float3(0.1, 0.2, 0.5));
+    colorShaderNode->set(*colorShaderNode->type->find_input(S("attribute")),
+                         S("Col"));
     shaderGraph->add(colorShaderNode);
 
     const ccl::NodeType *emissionNodeType = ccl::NodeType::find(S("emission"));
