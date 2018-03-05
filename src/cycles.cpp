@@ -226,23 +226,24 @@ void cycles_init(void)
     scene->film->exposure = 1.0f;
 
     scene->camera->matrix = ccl::transform_identity()
-        * ccl::transform_translate(ccl::make_float3(0.0f, 0.0f, -3.0f));
+        * ccl::transform_translate(ccl::make_float3(0.0f, 0.0f, -5.0f));
 
     ccl::Shader *object_shader = create_cube_shader();
     object_shader->tag_update(scene);
     scene->shaders.push_back(object_shader);
 
-    ccl::Mesh *mesh = create_cube(1.0);
-    mesh->used_shaders.push_back(object_shader);
-    scene->meshes.push_back(mesh);
+    for (int i = 0; i < 5; i++) {
+        ccl::Mesh *mesh = create_cube(1.0);
+        mesh->used_shaders.push_back(object_shader);
+        scene->meshes.push_back(mesh);
 
-    ccl::Object *object = new ccl::Object();
-    object->name = "cube";
-    object->mesh = mesh;
-    object->tfm = ccl::transform_identity() *
-        ccl::transform_rotate(40.0f * 3.14f / 180.0f,
-                              ccl::make_float3(1.0f, 1.0f, 1.0f));
-    scene->objects.push_back(object);
+        ccl::Object *object = new ccl::Object();
+        object->name = "cube";
+        object->mesh = mesh;
+        object->tfm = ccl::transform_identity() *
+            ccl::transform_translate(ccl::make_float3(i * 1.1, 0, 0));
+        scene->objects.push_back(object);
+    }
 
     ccl::Light *light = new ccl::Light();
     /*
