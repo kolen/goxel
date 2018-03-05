@@ -40,6 +40,7 @@ extern "C" {
 
 static ccl::Session *g_session = NULL;
 static ccl::BufferParams g_buffer_params;
+static ccl::SessionParams g_session_params;
 
 ccl::Mesh *create_cube(float size)
 {
@@ -184,35 +185,60 @@ static ccl::Shader *create_light_shader(void)
     return shader;
 }
 
-void cycles_init(void)
+static ccl::Mesh *create_mesh(const mesh_t *mesh)
 {
-    ccl::DeviceType device_type;
-    ccl::DeviceInfo device_info;
-    ccl::SessionParams session_params;
-    ccl::vector<ccl::DeviceInfo>& devices = ccl::Device::available_devices();
-    ccl::Scene *scene;
-    ccl::SceneParams scene_params;
+    ccl::Mesh *ret = new ccl::Mesh();
+    mesh_iterator_t iter;
+    int block_pos[3], nb = 0, i, j;
+    voxel_vertex_t* vertices;
+    ccl::Attribute *attr;
 
-    device_type = ccl::Device::type_from_string("CPU");
-    for (const ccl::DeviceInfo& device : devices) {
-        if (device_type == device.type) {
-            device_info = device;
-            break;
+    ret->subdivision_type = ccl::Mesh::SUBDIVISION_NONE;
+
+    iter = mesh_get_iterator(mesh,
+            MESH_ITER_BLOCKS | MESH_ITER_INCLUDES_NEIGHBORS);
+
+    vertices = (voxel_vertex_t*)calloc(
+            BLOCK_SIZE * BLOCK_SIZE * BLOCK_SIZE * 6 * 4, sizeof(*vertices));
+    while (mesh_iter(&iter, block_pos)) {
+        nb = mesh_generate_vertices(mesh, block_pos, 0, vertices);
+        if (!nb) continue;
+        ret->reserve_mesh(nb * 4, nb * 2);
+        for (i = 0; i < nb; i++) { // Once per quad.
+            for (j = 0; j < 4; j++) {
+                ret->add_vertex(ccl::make_float3(
+                            vertices[i * 4 + j].pos[0],
+                            vertices[i * 4 + j].pos[1],
+                            vertices[i * 4 + j].pos[2]));
+            }
+            ret->add_triangle(i * 4 + 0, i * 4 + 1, i * 4 + 2, 0, false);
+            ret->add_triangle(i * 4 + 2, i * 4 + 3, i * 4 + 0, 0, false);
+        }
+        break; // Only support one block for the moment!!
+    }
+
+    // Set color attribute.
+    if (nb) {
+        attr = ret->attributes.add(S("Col"), ccl::TypeDesc::TypeColor,
+                ccl::ATTR_ELEMENT_CORNER_BYTE);
+        for (i = 0; i < nb * 6; i++) {
+            attr->data_uchar4()[i] = ccl::make_uchar4(
+                    vertices[i / 6 * 4].color[0],
+                    vertices[i / 6 * 4].color[1],
+                    vertices[i / 6 * 4].color[2],
+                    vertices[i / 6 * 4].color[3]
+            );
         }
     }
-    session_params.progressive = true;
-    session_params.start_resolution = 64;
-    session_params.device = device_info;
-    session_params.samples = 20;
-    // session_params.threads = 1;
 
-    g_buffer_params.width = 256;
-    g_buffer_params.height = 256;
-    g_buffer_params.full_width = 256;
-    g_buffer_params.full_height = 256;
+    free(vertices);
+    return ret;
+}
 
-    g_session = new ccl::Session(session_params);
-
+static ccl::Scene *create_scene(void)
+{
+    ccl::Scene *scene;
+    ccl::SceneParams scene_params;
     scene_params.shadingsystem = ccl::SHADINGSYSTEM_OSL;
     // scene_params.shadingsystem = ccl::SHADINGSYSTEM_SVM;
 
@@ -232,6 +258,15 @@ void cycles_init(void)
     object_shader->tag_update(scene);
     scene->shaders.push_back(object_shader);
 
+    ccl::Mesh *mesh = create_mesh(goxel->render_mesh);
+    mesh->used_shaders.push_back(object_shader);
+    scene->meshes.push_back(mesh);
+    ccl::Object *object = new ccl::Object();
+    object->name = "mesh";
+    object->mesh = mesh;
+    scene->objects.push_back(object);
+
+    /*
     for (int i = 0; i < 5; i++) {
         ccl::Mesh *mesh = create_cube(1.0);
         mesh->used_shaders.push_back(object_shader);
@@ -244,6 +279,7 @@ void cycles_init(void)
             ccl::transform_translate(ccl::make_float3(i * 1.1, 0, 0));
         scene->objects.push_back(object);
     }
+    */
 
     ccl::Light *light = new ccl::Light();
     /*
@@ -264,10 +300,32 @@ void cycles_init(void)
     scene->camera->compute_auto_viewplane();
     scene->camera->need_update = true;
     scene->camera->need_device_update = true;
+    return scene;
+}
 
-    g_session->scene = scene;
-    g_session->reset(g_buffer_params, session_params.samples);
-    g_session->start();
+void cycles_init(void)
+{
+    ccl::DeviceType device_type;
+    ccl::DeviceInfo device_info;
+    ccl::vector<ccl::DeviceInfo>& devices = ccl::Device::available_devices();
+
+    device_type = ccl::Device::type_from_string("CPU");
+    for (const ccl::DeviceInfo& device : devices) {
+        if (device_type == device.type) {
+            device_info = device;
+            break;
+        }
+    }
+    g_session_params.progressive = true;
+    g_session_params.start_resolution = 64;
+    g_session_params.device = device_info;
+    g_session_params.samples = 20;
+    // session_params.threads = 1;
+
+    g_buffer_params.width = 256;
+    g_buffer_params.height = 256;
+    g_buffer_params.full_width = 256;
+    g_buffer_params.full_height = 256;
 }
 
 void cycles_render(void)
@@ -280,6 +338,19 @@ void cycles_render(void)
     GL(glMatrixMode(GL_MODELVIEW));
     GL(glLoadIdentity());
     GL(glUseProgram(0));
+
+    static uint64_t last_mesh_key = 0;
+    uint64_t mesh_key = mesh_get_key(goxel->render_mesh);
+    if (mesh_key != last_mesh_key) {
+        last_mesh_key = mesh_key;
+        if (g_session) delete g_session;
+        g_session = new ccl::Session(g_session_params);
+        g_session->scene = create_scene();
+        g_session->reset(g_buffer_params, g_session_params.samples);
+        g_session->start();
+    }
+
+    if (!g_session) return;
 
     g_session->draw(g_buffer_params, draw_params);
 
