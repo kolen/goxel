@@ -226,7 +226,7 @@ void cycles_init(void)
     scene->film->exposure = 1.0f;
 
     scene->camera->matrix = ccl::transform_identity()
-        * ccl::transform_translate(ccl::make_float3(0.0f, 0.0f, -5.0f));
+        * ccl::transform_translate(ccl::make_float3(0.0f, 0.0f, -10.0f));
 
     ccl::Shader *object_shader = create_cube_shader();
     object_shader->tag_update(scene);
@@ -261,6 +261,7 @@ void cycles_init(void)
     light->shader = light_shader;
     scene->lights.push_back(light);
 
+    scene->camera->compute_auto_viewplane();
     scene->camera->need_update = true;
     scene->camera->need_device_update = true;
 
@@ -272,7 +273,7 @@ void cycles_init(void)
 void cycles_render(void)
 {
     static ccl::DeviceDrawParams draw_params = ccl::DeviceDrawParams();
-    GL(glViewport(256, 128, 256, 256));
+    GL(glViewport(256, 256, 256, 256));
     GL(glMatrixMode(GL_PROJECTION));
     GL(glLoadIdentity());
     GL(glOrtho(0, g_buffer_params.width, 0, g_buffer_params.height, -1, 1));
