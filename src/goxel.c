@@ -261,6 +261,7 @@ void goxel_init(goxel_t *gox)
     render_init();
     shapes_init();
     sound_init();
+    cycles_init();
     quat_set_identity(goxel->camera.rot);
     goxel->camera.dist = 128;
     goxel->camera.aspect = 1;

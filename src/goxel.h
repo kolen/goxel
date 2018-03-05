@@ -1459,6 +1459,10 @@ void sound_init(void);
 void sound_play(const char *sound);
 void sound_iter(void);
 
+// Section: cycles
+void cycles_init(void);
+void cycles_render(void);
+
 // Section: tests
 
 /* Function: tests_run
