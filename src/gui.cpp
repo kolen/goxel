@@ -541,7 +541,9 @@ void render_view(const ImDrawList* parent_list, const ImDrawCmd* cmd)
                    (int)view->rect[3]};
     goxel_render_view(goxel, view->rect);
     render_submit(&goxel->rend, rect, goxel->back_color);
-    cycles_render(rect);
+    // XXX: cycle rendering should be done in goxel_render_view.
+    // And no need to render twice in that case!
+    if (goxel->use_cycles) cycles_render(rect);
     GL(glViewport(0, 0, width * scale, height * scale));
 }
 
@@ -890,6 +892,7 @@ static void render_panel(goxel_t *goxel)
     const char **names;
     render_settings_t settings;
 
+    ImGui::Checkbox("Cycles", &goxel->use_cycles);
     ImGui::Checkbox("Ortho", &goxel->camera.ortho);
     names = (const char**)calloc(nb, sizeof(*names));
     for (i = 0; i < nb; i++) {

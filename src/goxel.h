@@ -1189,6 +1189,7 @@ typedef struct goxel
 
     camera_t   camera;
 
+    bool       use_cycles; // Render with cycles.
     uint8_t    back_color[4];
     uint8_t    grid_color[4];
     uint8_t    image_box_color[4];
