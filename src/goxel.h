@@ -1461,7 +1461,7 @@ void sound_iter(void);
 
 // Section: cycles
 void cycles_init(void);
-void cycles_render(void);
+void cycles_render(const int rect[4]);
 
 // Section: tests
 

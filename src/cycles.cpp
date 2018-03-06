@@ -230,7 +230,7 @@ end:
     return ret;
 }
 
-static ccl::Scene *create_scene(void)
+static ccl::Scene *create_scene(int w, int h)
 {
     mesh_t *gmesh = goxel->render_mesh;
     int block_pos[3];
@@ -241,9 +241,9 @@ static ccl::Scene *create_scene(void)
     // scene_params.shadingsystem = ccl::SHADINGSYSTEM_SVM;
 
     scene = new ccl::Scene(scene_params, g_session->device);
-    scene->camera->width = 256;
-    scene->camera->height = 256;
-    scene->camera->fov = 40.0 * DD2R;
+    scene->camera->width = w;
+    scene->camera->height = h;
+    scene->camera->fov = 20.0 * DD2R;
     scene->camera->type = ccl::CameraType::CAMERA_PERSPECTIVE;
     scene->camera->full_width = scene->camera->width;
     scene->camera->full_height = scene->camera->height;
@@ -325,19 +325,23 @@ void cycles_init(void)
     g_session_params.device = device_info;
     g_session_params.samples = 20;
     // session_params.threads = 1;
-
-    g_buffer_params.width = 256;
-    g_buffer_params.height = 256;
-    g_buffer_params.full_width = 256;
-    g_buffer_params.full_height = 256;
 }
 
-void cycles_render(void)
+void cycles_render(const int rect[4])
 {
     static ccl::DeviceDrawParams draw_params = ccl::DeviceDrawParams();
-    GL(glViewport(256, 256, 256, 256));
+    int w = rect[2];
+    int h = rect[3];
+
+    g_buffer_params.width = w;
+    g_buffer_params.height = h;
+    g_buffer_params.full_width = w;
+    g_buffer_params.full_height = h;
+
+    GL(glViewport(rect[0], rect[1], rect[2], rect[3]));
     GL(glMatrixMode(GL_PROJECTION));
     GL(glLoadIdentity());
+
     GL(glOrtho(0, g_buffer_params.width, 0, g_buffer_params.height, -1, 1));
     GL(glMatrixMode(GL_MODELVIEW));
     GL(glLoadIdentity());
@@ -349,7 +353,7 @@ void cycles_render(void)
         last_mesh_key = mesh_key;
         if (g_session) delete g_session;
         g_session = new ccl::Session(g_session_params);
-        g_session->scene = create_scene();
+        g_session->scene = create_scene(w, h);
         g_session->reset(g_buffer_params, g_session_params.samples);
         g_session->start();
     }
