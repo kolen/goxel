@@ -327,9 +327,25 @@ void cycles_init(void)
     // session_params.threads = 1;
 }
 
+/*
+ * Compute a value that should change when we need to rerender the scene.
+ */
+static uint64_t get_render_key(void)
+{
+    uint64_t key;
+    const camera_t *camera = &goxel->camera;
+    key = mesh_get_key(goxel->render_mesh);
+    key = crc64(key, (uint8_t*)camera->view_mat, sizeof(camera->view_mat));
+    key = crc64(key, (uint8_t*)camera->proj_mat, sizeof(camera->proj_mat));
+    return key;
+}
+
 void cycles_render(const int rect[4])
 {
     static ccl::DeviceDrawParams draw_params = ccl::DeviceDrawParams();
+    static uint64_t last_key = 0;
+    uint64_t key;
+
     int w = rect[2];
     int h = rect[3];
 
@@ -347,10 +363,9 @@ void cycles_render(const int rect[4])
     GL(glLoadIdentity());
     GL(glUseProgram(0));
 
-    static uint64_t last_mesh_key = 0;
-    uint64_t mesh_key = mesh_get_key(goxel->render_mesh);
-    if (mesh_key != last_mesh_key) {
-        last_mesh_key = mesh_key;
+    key = get_render_key();
+    if (key != last_key) {
+        last_key = key;
         if (g_session) delete g_session;
         g_session = new ccl::Session(g_session_params);
         g_session->scene = create_scene(w, h);
