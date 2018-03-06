@@ -124,13 +124,11 @@ env.Append(CPPFLAGS=[
     '-DCCL_NAMESPACE_END=}',
     '-DWITH_CUDA_DYNLOAD',
     '-DWITHOUT_OPENIMAGEIO',
+    '-DWITH_GLEW_MX',
 ])
 env.Append(CPPFLAGS=['-Wno-sign-compare', '-Wno-strict-aliasing',
                      '-Wno-maybe-uninitialized', '-Wno-uninitialized'])
 env.Append(LIBS=['glut'])
-sources += glob.glob('ext_src/glew/glew.c')
-env.Append(CPPPATH=['ext_src/glew'])
-env.Append(CCFLAGS='-DGLEW_STATIC')
 
 
 if target_os == 'posix':
