@@ -56,10 +56,14 @@ static string this_program_path()
 	if (r > 0) filename[r] = 0; // readlink does not fill in the 0 byte
 #elif defined(__APPLE__)
 	// For info:  'man 3 dyld'
+    // For the moment I just disable on OSX! [Guillaume]
+    /*
 	unsigned int size = sizeof(filename);
 	int r = _NSGetExecutablePath (filename, &size);
 	if (r == 0)
 		r = size;
+     */
+    int r = 0;
 #elif defined(_WIN32)
 	// According to MSDN...
 	unsigned int size = sizeof(filename);
