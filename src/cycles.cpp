@@ -243,7 +243,7 @@ static ccl::Scene *create_scene(void)
     scene = new ccl::Scene(scene_params, g_session->device);
     scene->camera->width = 256;
     scene->camera->height = 256;
-    scene->camera->fov = ccl::radians(40.0);
+    scene->camera->fov = 40.0 * DD2R;
     scene->camera->type = ccl::CameraType::CAMERA_PERSPECTIVE;
     scene->camera->full_width = scene->camera->width;
     scene->camera->full_height = scene->camera->height;

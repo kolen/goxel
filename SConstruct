@@ -123,10 +123,11 @@ env.Append(CPPFLAGS=[
     '-DCCL_NAMESPACE_BEGIN=namespace ccl {',
     '-DCCL_NAMESPACE_END=}',
     '-DWITH_CUDA_DYNLOAD',
+    '-DWITHOUT_OPENIMAGEIO',
 ])
 env.Append(CPPFLAGS=['-Wno-sign-compare', '-Wno-strict-aliasing',
                      '-Wno-maybe-uninitialized', '-Wno-uninitialized'])
-env.Append(LIBS=['glut', 'OpenImageIO', 'pugixml'])
+env.Append(LIBS=['glut', 'pugixml'])
 sources += glob.glob('ext_src/glew/glew.c')
 env.Append(CPPPATH=['ext_src/glew'])
 env.Append(CCFLAGS='-DGLEW_STATIC')

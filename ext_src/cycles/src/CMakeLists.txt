@@ -130,6 +130,10 @@ if(WITH_CYCLES_OSL)
 	endif()
 endif()
 
+if(NOT WITH_OPENIMAGEIO)
+	add_definitions(-DWITHOUT_OPENIMAGEIO)
+endif()
+
 # Definitions and Includes
 
 add_definitions(
@@ -218,7 +222,7 @@ if(WITH_CYCLES_DEBUG)
 	add_definitions(-DWITH_CYCLES_DEBUG)
 endif()
 
-if(NOT OPENIMAGEIO_PUGIXML_FOUND)
+if(NOT WITH_OPENIMAGEIO OR NOT OPENIMAGEIO_PUGIXML_FOUND)
 	add_definitions(-DWITH_SYSTEM_PUGIXML)
 endif()
 
