@@ -127,7 +127,7 @@ env.Append(CPPFLAGS=[
 ])
 env.Append(CPPFLAGS=['-Wno-sign-compare', '-Wno-strict-aliasing',
                      '-Wno-maybe-uninitialized', '-Wno-uninitialized'])
-env.Append(LIBS=['glut', 'pugixml'])
+env.Append(LIBS=['glut'])
 sources += glob.glob('ext_src/glew/glew.c')
 env.Append(CPPPATH=['ext_src/glew'])
 env.Append(CCFLAGS='-DGLEW_STATIC')
