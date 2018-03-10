@@ -87,11 +87,11 @@ static ccl::Shader *create_light_shader(void)
     emissionShaderNode->name = "emissionNode";
     emissionShaderNode->set(
         *emissionShaderNode->type->find_input(S("strength")),
-        10000.0f
+        1.0f
     );
     emissionShaderNode->set(
         *emissionShaderNode->type->find_input(S("color")),
-        ccl::make_float3(0.8, 0.8, 0.8)
+        ccl::make_float3(1.0, 1.0, 1.0)
     );
 
     shaderGraph->add(emissionShaderNode);
@@ -212,8 +212,11 @@ static ccl::Scene *create_scene(int w, int h)
     }
     */
 
-    light->set(*((ccl::Node*)light)->type->find_input(S("co")),
-               ccl::make_float3(-5, 10, 20));
+    light->type = ccl::LIGHT_DISTANT;
+    light->size = 0.05f;
+    light->co = ccl::make_float3(-5, 10, 20);
+    light->dir = ccl::make_float3(-0.1, -0.1, -1);
+    light->tag_update(scene);
 
     ccl::Shader *light_shader = create_light_shader();
     light_shader->tag_update(scene);
