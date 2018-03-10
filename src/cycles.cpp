@@ -17,6 +17,7 @@
  */
 
 #include "device/device.h"
+#include "render/background.h"
 #include "render/camera.h"
 #include "render/film.h"
 #include "render/graph.h"
@@ -98,6 +99,33 @@ static ccl::Shader *create_light_shader(void)
 
     shaderGraph->connect(
         emissionShaderNode->output("Emission"),
+        shaderGraph->output()->input("Surface")
+    );
+
+    shader->set_graph(shaderGraph);
+    return shader;
+}
+
+static ccl::Shader *create_background_shader(void)
+{
+    ccl::Shader *shader = new ccl::Shader();
+    shader->name = "backgroundShader";
+    ccl::ShaderGraph *shaderGraph = new ccl::ShaderGraph();
+
+    const ccl::NodeType *backgroundNodeType =
+            ccl::NodeType::find(S("background_shader"));
+    ccl::ShaderNode *backgroundShaderNode = static_cast<ccl::BackgroundNode*>(
+            backgroundNodeType->create(backgroundNodeType));
+    backgroundShaderNode->name = "backgroundNode";
+    backgroundShaderNode->set(
+        *backgroundShaderNode->type->find_input(S("color")),
+        ccl::make_float3(0.2, 0.2, 0.2)
+    );
+
+    shaderGraph->add(backgroundShaderNode);
+
+    shaderGraph->connect(
+        backgroundShaderNode->output("Background"),
         shaderGraph->output()->input("Surface")
     );
 
@@ -219,24 +247,24 @@ static ccl::Scene *create_scene(int w, int h)
         scene->objects.push_back(object);
     }
 
-    ccl::Light *light = new ccl::Light();
-    /*
-    foreach(const ccl::SocketType& socket, ((ccl::Node*)light)->type->inputs) {
-        LOG_D("XXX %s", socket.name.c_str());
-    }
-    */
+    ccl::Light *light;
 
+    light = new ccl::Light();
     light->type = ccl::LIGHT_DISTANT;
-    light->size = 0.05f;
+    light->size = 0.01f;
     get_light_dir(light_dir);
     light->dir = ccl::make_float3(light_dir[0], light_dir[1], light_dir[2]);
     light->tag_update(scene);
-
     ccl::Shader *light_shader = create_light_shader();
     light_shader->tag_update(scene);
     scene->shaders.push_back(light_shader);
     light->shader = light_shader;
     scene->lights.push_back(light);
+
+    ccl::Shader *back_shader = create_background_shader();
+    back_shader->tag_update(scene);
+    scene->shaders.push_back(back_shader);
+    scene->background->shader = back_shader;
 
     scene->camera->compute_auto_viewplane();
     scene->camera->need_update = true;
@@ -271,9 +299,12 @@ static uint64_t get_render_key(void)
 {
     uint64_t key;
     const camera_t *camera = &goxel->camera;
+    const renderer_t *rend = &goxel->rend;
     key = mesh_get_key(goxel->render_mesh);
     key = crc64(key, (uint8_t*)camera->view_mat, sizeof(camera->view_mat));
     key = crc64(key, (uint8_t*)camera->proj_mat, sizeof(camera->proj_mat));
+    key = crc64(key, (uint8_t*)&rend->light, sizeof(rend->light));
+    key = crc64(key, (uint8_t*)&rend->settings, sizeof(rend->settings));
     return key;
 }
 
