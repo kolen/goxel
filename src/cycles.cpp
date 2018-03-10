@@ -150,10 +150,24 @@ end:
     return ret;
 }
 
+static void get_light_dir(float out[3])
+{
+    const renderer_t *rend = &goxel->rend;
+    float m[4][4], light_dir[4];
+    const float z[4] = {0, 0, 1, 0};
+
+    mat4_set_identity(m);
+    mat4_irotate(m, rend->light.yaw, 0, 0, 1);
+    mat4_irotate(m, rend->light.pitch, 1, 0, 0);
+    mat4_mul_vec4(m, z, light_dir);
+    vec3_mul(light_dir, -1, out);
+}
+
 static ccl::Scene *create_scene(int w, int h)
 {
     mesh_t *gmesh = goxel->render_mesh;
     int block_pos[3];
+    float light_dir[3];
     mesh_iterator_t iter;
     ccl::Scene *scene;
     ccl::SceneParams scene_params;
@@ -214,8 +228,8 @@ static ccl::Scene *create_scene(int w, int h)
 
     light->type = ccl::LIGHT_DISTANT;
     light->size = 0.05f;
-    light->co = ccl::make_float3(-5, 10, 20);
-    light->dir = ccl::make_float3(-0.1, -0.1, -1);
+    get_light_dir(light_dir);
+    light->dir = ccl::make_float3(light_dir[0], light_dir[1], light_dir[2]);
     light->tag_update(scene);
 
     ccl::Shader *light_shader = create_light_shader();
