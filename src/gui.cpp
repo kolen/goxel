@@ -539,11 +539,21 @@ void render_view(const ImDrawList* parent_list, const ImDrawCmd* cmd)
                    (int)(height - view->rect[1] - view->rect[3]),
                    (int)view->rect[2],
                    (int)view->rect[3]};
-    goxel_render_view(goxel, view->rect);
-    render_submit(&goxel->rend, rect, goxel->back_color);
-    // XXX: cycle rendering should be done in goxel_render_view.
-    // And no need to render twice in that case!
-    if (goxel->use_cycles) cycles_render(rect);
+    if (!goxel->use_cycles) {
+        goxel_render_view(goxel, view->rect);
+        render_submit(&goxel->rend, rect, goxel->back_color);
+    } else {
+        // XXX: cycle rendering should be done in goxel_render_view.
+        GL(glBindFramebuffer(GL_FRAMEBUFFER, goxel->rend.fbo));
+        GL(glEnable(GL_SCISSOR_TEST));
+        GL(glEnable(GL_SCISSOR_TEST));
+        GL(glViewport(rect[0] * scale, rect[1] * scale,
+                      rect[2] * scale, rect[3] * scale));
+        GL(glScissor(rect[0] * scale, rect[1] * scale,
+                     rect[2] * scale, rect[3] * scale));
+        GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+        cycles_render(rect);
+    }
     GL(glViewport(0, 0, width * scale, height * scale));
 }
 

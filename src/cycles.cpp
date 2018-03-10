@@ -119,7 +119,7 @@ static ccl::Shader *create_background_shader(void)
     backgroundShaderNode->name = "backgroundNode";
     backgroundShaderNode->set(
         *backgroundShaderNode->type->find_input(S("color")),
-        ccl::make_float3(0.2, 0.2, 0.2)
+        ccl::make_float3(0.1, 0.1, 0.1)
     );
 
     shaderGraph->add(backgroundShaderNode);
@@ -199,8 +199,9 @@ static ccl::Scene *create_scene(int w, int h)
     mesh_iterator_t iter;
     ccl::Scene *scene;
     ccl::SceneParams scene_params;
-    scene_params.shadingsystem = ccl::SHADINGSYSTEM_OSL;
-    // scene_params.shadingsystem = ccl::SHADINGSYSTEM_SVM;
+    // scene_params.shadingsystem = ccl::SHADINGSYSTEM_OSL;
+    scene_params.shadingsystem = ccl::SHADINGSYSTEM_SVM;
+    scene_params.persistent_data = true;
 
     scene = new ccl::Scene(scene_params, g_session->device);
     scene->camera->width = w;
