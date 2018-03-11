@@ -119,7 +119,11 @@ static ccl::Shader *create_background_shader(void)
     backgroundShaderNode->name = "backgroundNode";
     backgroundShaderNode->set(
         *backgroundShaderNode->type->find_input(S("color")),
-        ccl::make_float3(0.1, 0.1, 0.1)
+        ccl::make_float3(1, 1, 1)
+    );
+    backgroundShaderNode->set(
+        *backgroundShaderNode->type->find_input(S("strength")),
+        0.1f
     );
 
     shaderGraph->add(backgroundShaderNode);
