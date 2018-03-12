@@ -303,6 +303,12 @@ static bool sync_mesh(int w, int h)
 
     key = mesh_get_key(goxel->render_mesh);
     if (key == last_key) return false;
+    // For the moment I don't see how to update the mesh without crashing
+    // the application, except by creating a new session!
+    if (g_session) {
+        delete g_session;
+        g_session = NULL;
+    }
     if (!g_session) {
         // scene_params.shadingsystem = ccl::SHADINGSYSTEM_OSL;
         scene_params.shadingsystem = ccl::SHADINGSYSTEM_SVM;
