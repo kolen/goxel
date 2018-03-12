@@ -116,6 +116,7 @@ typedef struct gui_t {
     int     current_panel;
     view_t  view;
     int     min_panel_size;
+    bool    use_cycles;
     struct {
         gesture_t drag;
         gesture_t hover;
@@ -902,7 +903,9 @@ static void render_panel(goxel_t *goxel)
     const char **names;
     render_settings_t settings;
 
-    ImGui::Checkbox("Cycles", &goxel->use_cycles);
+    ImGui::Checkbox("Cycles", &gui->use_cycles);
+    goxel->use_cycles = gui->use_cycles;
+    goxel->no_edit = goxel->use_cycles;
     ImGui::Checkbox("Ortho", &goxel->camera.ortho);
     names = (const char**)calloc(nb, sizeof(*names));
     for (i = 0; i < nb; i++) {
@@ -1346,6 +1349,9 @@ void gui_iter(goxel_t *goxel, const inputs_t *inputs)
     ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, io.DisplaySize.y));
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::Begin("Goxel", NULL, window_flags);
+
+    goxel->no_edit = false; // Set depending on what panel is selected.
+    goxel->use_cycles = false;  // Also set depending on the panel.
 
     render_menu();
     render_left_panel();

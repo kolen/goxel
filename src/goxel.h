@@ -1204,6 +1204,7 @@ typedef struct goxel
 
     tool_t     *tool;
     float      tool_radius;
+    bool       no_edit; // Disable editing.
 
     // Some state for the tool iter functions.
     float      tool_plane[4][4];

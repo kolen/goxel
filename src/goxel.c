@@ -489,7 +489,8 @@ void goxel_mouse_in_view(goxel_t *goxel, const float viewport[4],
                          !box_is_null(goxel->image->box) ?
                          &goxel->image->box : NULL;
 
-    tool_iter(goxel->tool, viewport);
+    if (!goxel->no_edit)
+        tool_iter(goxel->tool, viewport);
 
     if (inputs->mouse_wheel) {
         goxel->camera.dist /= pow(1.1, inputs->mouse_wheel);
