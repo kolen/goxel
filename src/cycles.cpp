@@ -295,48 +295,73 @@ void cycles_init(void)
     // session_params.threads = 1;
 }
 
-/*
- * Compute a value that should change when we need to rerender the scene.
- */
-static uint64_t get_render_key(void)
-{
-    uint64_t key;
-    const camera_t *camera = &goxel->camera;
-    const renderer_t *rend = &goxel->rend;
-    key = mesh_get_key(goxel->render_mesh);
-    key = crc64(key, (uint8_t*)camera->view_mat, sizeof(camera->view_mat));
-    key = crc64(key, (uint8_t*)camera->proj_mat, sizeof(camera->proj_mat));
-    key = crc64(key, (uint8_t*)&rend->light, sizeof(rend->light));
-    key = crc64(key, (uint8_t*)&rend->settings, sizeof(rend->settings));
-    return key;
-}
-
 static bool sync(int w, int h)
 {
+    static uint64_t last_mesh_key = 0;
+    static uint64_t last_cam_key = 0;
+    uint64_t mesh_key, cam_key;
     ccl::SceneParams scene_params;
+    ccl::Scene *scene;
+    float mat[4][4];
+    float rot[4];
+    const camera_t *camera = &goxel->camera;
+    const renderer_t *rend = &goxel->rend;
 
-    if (!g_session) {
-        // scene_params.shadingsystem = ccl::SHADINGSYSTEM_OSL;
-        scene_params.shadingsystem = ccl::SHADINGSYSTEM_SVM;
-        // scene_params.persistent_data = true;
-        g_session = new ccl::Session(g_session_params);
-        g_session->scene = new ccl::Scene(scene_params, g_session->device);
-        g_session->start();
+    mesh_key = mesh_get_key(goxel->render_mesh);
+    cam_key = crc64(mesh_key, (uint8_t*)camera->view_mat, sizeof(camera->view_mat));
+    cam_key = crc64(cam_key, (uint8_t*)camera->proj_mat, sizeof(camera->proj_mat));
+    cam_key = crc64(cam_key, (uint8_t*)&rend->light, sizeof(rend->light));
+    cam_key = crc64(cam_key, (uint8_t*)&rend->settings, sizeof(rend->settings));
+
+    if (mesh_key != last_mesh_key) {
+        if (!g_session) {
+            // scene_params.shadingsystem = ccl::SHADINGSYSTEM_OSL;
+            scene_params.shadingsystem = ccl::SHADINGSYSTEM_SVM;
+            // scene_params.persistent_data = true;
+            g_session = new ccl::Session(g_session_params);
+            g_session->scene = new ccl::Scene(scene_params, g_session->device);
+            g_session->start();
+        }
+        if (!g_session->ready_to_reset()) return false;
+        g_session->scene->mutex.lock();
+        sync_scene(g_session->scene, w, h);
+        g_session->scene->mutex.unlock();
+        g_session->reset(g_buffer_params, g_session_params.samples);
+        last_mesh_key = mesh_key;
     }
-    if (!g_session->ready_to_reset()) return false;
-    g_session->scene->mutex.lock();
-    sync_scene(g_session->scene, w, h);
-    g_session->scene->mutex.unlock();
-    g_session->reset(g_buffer_params, g_session_params.samples);
+    if (cam_key != last_cam_key) {
+        scene = g_session->scene;
+        scene->camera->width = w;
+        scene->camera->height = h;
+        scene->camera->fov = 20.0 * DD2R;
+        scene->camera->type = ccl::CameraType::CAMERA_PERSPECTIVE;
+        scene->camera->full_width = scene->camera->width;
+        scene->camera->full_height = scene->camera->height;
+        assert(sizeof(scene->camera->matrix) == sizeof(mat));
+        mat4_set_identity(mat);
+        mat4_itranslate(mat, -goxel->camera.ofs[0],
+                             -goxel->camera.ofs[1],
+                             -goxel->camera.ofs[2]);
+        quat_copy(goxel->camera.rot, rot);
+        rot[0] *= -1;
+        mat4_imul_quat(mat, rot);
+        mat4_itranslate(mat, 0, 0, goxel->camera.dist);
+        mat4_iscale(mat, 1, 1, -1);
+        mat4_transpose(mat, mat);
+        memcpy(&scene->camera->matrix, mat, sizeof(mat));
+        scene->camera->compute_auto_viewplane();
+        scene->camera->need_update = true;
+        scene->camera->need_device_update = true;
+        g_session->reset(g_buffer_params, g_session_params.samples);
+
+        last_cam_key = cam_key;
+    }
     return true;
 }
 
 void cycles_render(const int rect[4])
 {
     static ccl::DeviceDrawParams draw_params = ccl::DeviceDrawParams();
-    static uint64_t last_key = 0;
-    uint64_t key;
-
     int w = rect[2];
     int h = rect[3];
 
@@ -354,11 +379,7 @@ void cycles_render(const int rect[4])
     GL(glLoadIdentity());
     GL(glUseProgram(0));
 
-    key = get_render_key();
-    if (key != last_key) {
-        if (sync(w, h)) last_key = key;
-    }
-
+    sync(w, h);
     if (!g_session) return;
 
     g_session->draw(g_buffer_params, draw_params);
