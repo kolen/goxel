@@ -295,6 +295,31 @@ void cycles_init(void)
     // session_params.threads = 1;
 }
 
+static bool sync_mesh(int w, int h)
+{
+    static uint64_t last_key = 0;
+    uint64_t key;
+    ccl::SceneParams scene_params;
+
+    key = mesh_get_key(goxel->render_mesh);
+    if (key == last_key) return false;
+    if (!g_session) {
+        // scene_params.shadingsystem = ccl::SHADINGSYSTEM_OSL;
+        scene_params.shadingsystem = ccl::SHADINGSYSTEM_SVM;
+        // scene_params.persistent_data = true;
+        g_session = new ccl::Session(g_session_params);
+        g_session->scene = new ccl::Scene(scene_params, g_session->device);
+        g_session->start();
+    }
+    if (!g_session->ready_to_reset()) return false;
+    g_session->scene->mutex.lock();
+    sync_scene(g_session->scene, w, h);
+    g_session->scene->mutex.unlock();
+    g_session->reset(g_buffer_params, g_session_params.samples);
+    last_key = key;
+    return true;
+}
+
 static bool sync_camera(int w, int h)
 {
     static uint64_t last_key = 0;
@@ -339,28 +364,7 @@ static bool sync_camera(int w, int h)
 
 static bool sync(int w, int h)
 {
-    static uint64_t last_mesh_key = 0;
-    uint64_t mesh_key;
-    ccl::SceneParams scene_params;
-
-    mesh_key = mesh_get_key(goxel->render_mesh);
-
-    if (mesh_key != last_mesh_key) {
-        if (!g_session) {
-            // scene_params.shadingsystem = ccl::SHADINGSYSTEM_OSL;
-            scene_params.shadingsystem = ccl::SHADINGSYSTEM_SVM;
-            // scene_params.persistent_data = true;
-            g_session = new ccl::Session(g_session_params);
-            g_session->scene = new ccl::Scene(scene_params, g_session->device);
-            g_session->start();
-        }
-        if (!g_session->ready_to_reset()) return false;
-        g_session->scene->mutex.lock();
-        sync_scene(g_session->scene, w, h);
-        g_session->scene->mutex.unlock();
-        g_session->reset(g_buffer_params, g_session_params.samples);
-        last_mesh_key = mesh_key;
-    }
+    sync_mesh(w, h);
     sync_camera(w, h);
     return true;
 }
