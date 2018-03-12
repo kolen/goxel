@@ -195,19 +195,18 @@ static void get_light_dir(float out[3])
     vec3_mul(light_dir, -1, out);
 }
 
-static ccl::Scene *create_scene(int w, int h)
+static void sync_scene(ccl::Scene *scene, int w, int h)
 {
     mesh_t *gmesh = goxel->render_mesh;
     int block_pos[3];
     float light_dir[3];
     mesh_iterator_t iter;
-    ccl::Scene *scene;
-    ccl::SceneParams scene_params;
-    // scene_params.shadingsystem = ccl::SHADINGSYSTEM_OSL;
-    scene_params.shadingsystem = ccl::SHADINGSYSTEM_SVM;
-    scene_params.persistent_data = true;
 
-    scene = new ccl::Scene(scene_params, g_session->device);
+    scene->shaders.clear();
+    scene->meshes.clear();
+    scene->objects.clear();
+    scene->lights.clear();
+
     scene->camera->width = w;
     scene->camera->height = h;
     scene->camera->fov = 20.0 * DD2R;
@@ -274,7 +273,6 @@ static ccl::Scene *create_scene(int w, int h)
     scene->camera->compute_auto_viewplane();
     scene->camera->need_update = true;
     scene->camera->need_device_update = true;
-    return scene;
 }
 
 void cycles_init(void)
@@ -313,6 +311,26 @@ static uint64_t get_render_key(void)
     return key;
 }
 
+static bool sync(int w, int h)
+{
+    ccl::SceneParams scene_params;
+
+    if (!g_session) {
+        // scene_params.shadingsystem = ccl::SHADINGSYSTEM_OSL;
+        scene_params.shadingsystem = ccl::SHADINGSYSTEM_SVM;
+        // scene_params.persistent_data = true;
+        g_session = new ccl::Session(g_session_params);
+        g_session->scene = new ccl::Scene(scene_params, g_session->device);
+        g_session->start();
+    }
+    if (!g_session->ready_to_reset()) return false;
+    g_session->scene->mutex.lock();
+    sync_scene(g_session->scene, w, h);
+    g_session->scene->mutex.unlock();
+    g_session->reset(g_buffer_params, g_session_params.samples);
+    return true;
+}
+
 void cycles_render(const int rect[4])
 {
     static ccl::DeviceDrawParams draw_params = ccl::DeviceDrawParams();
@@ -338,12 +356,7 @@ void cycles_render(const int rect[4])
 
     key = get_render_key();
     if (key != last_key) {
-        last_key = key;
-        if (g_session) delete g_session;
-        g_session = new ccl::Session(g_session_params);
-        g_session->scene = create_scene(w, h);
-        g_session->reset(g_buffer_params, g_session_params.samples);
-        g_session->start();
+        if (sync(w, h)) last_key = key;
     }
 
     if (!g_session) return;
