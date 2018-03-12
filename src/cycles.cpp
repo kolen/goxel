@@ -320,6 +320,27 @@ static bool sync_mesh(int w, int h)
     return true;
 }
 
+static bool sync_lights(int w, int h)
+{
+    static uint64_t last_key = 0;
+    uint64_t key;
+    float light_dir[3];
+    ccl::Light *light;
+    ccl::Scene *scene = g_session->scene;
+
+    key = crc64(0, (uint8_t*)&goxel->rend.light, sizeof(goxel->rend.light));
+    if (key == last_key) return false;
+
+    light = scene->lights[0];
+    light->size = 0.01f;
+    get_light_dir(light_dir);
+    light->dir = ccl::make_float3(light_dir[0], light_dir[1], light_dir[2]);
+    light->tag_update(scene);
+    g_session->reset(g_buffer_params, g_session_params.samples);
+    last_key = key;
+    return true;
+}
+
 static bool sync_camera(int w, int h)
 {
     static uint64_t last_key = 0;
@@ -365,6 +386,7 @@ static bool sync_camera(int w, int h)
 static bool sync(int w, int h)
 {
     sync_mesh(w, h);
+    sync_lights(w, h);
     sync_camera(w, h);
     return true;
 }
