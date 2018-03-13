@@ -117,7 +117,6 @@ sources += glob.glob('ext_src/cycles/src/subd/*.cpp')
 
 env.Append(CPPPATH=['ext_src/cycles/src'])
 env.Append(CPPPATH=['ext_src/cycles/third_party/atomic'])
-# env.Append(CPPPATH=['ext_src/cycles/third_party/cuew/include'])
 env.Append(CPPFLAGS=[
     '-DCYCLES_STD_UNORDERED_MAP',
     '-DCCL_NAMESPACE_BEGIN=namespace ccl {',
@@ -127,7 +126,7 @@ env.Append(CPPFLAGS=[
     '-DWITH_GLEW_MX',
 ])
 env.Append(CPPFLAGS=['-Wno-sign-compare', '-Wno-strict-aliasing',
-                     '-Wno-maybe-uninitialized', '-Wno-uninitialized'])
+                     '-Wno-uninitialized', '-Wno-overloaded-virtual'])
 env.Append(LIBS=['glut'])
 
 
