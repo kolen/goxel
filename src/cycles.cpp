@@ -343,6 +343,8 @@ static bool sync_camera(int w, int h)
 
     key = crc64(0, (uint8_t*)camera->view_mat, sizeof(camera->view_mat));
     key = crc64(key, (uint8_t*)camera->proj_mat, sizeof(camera->proj_mat));
+    key = crc64(key, (uint8_t*)&w, sizeof(w));
+    key = crc64(key, (uint8_t*)&h, sizeof(h));
 
     if (key == last_key) return false;
 
