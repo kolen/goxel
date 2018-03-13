@@ -182,24 +182,10 @@ end:
     return ret;
 }
 
-static void get_light_dir(float out[3])
-{
-    const renderer_t *rend = &goxel->rend;
-    float m[4][4], light_dir[4];
-    const float z[4] = {0, 0, 1, 0};
-
-    mat4_set_identity(m);
-    mat4_irotate(m, rend->light.yaw, 0, 0, 1);
-    mat4_irotate(m, rend->light.pitch, 1, 0, 0);
-    mat4_mul_vec4(m, z, light_dir);
-    vec3_mul(light_dir, -1, out);
-}
-
 static void sync_scene(ccl::Scene *scene, int w, int h)
 {
     mesh_t *gmesh = goxel->render_mesh;
     int block_pos[3];
-    float light_dir[3];
     mesh_iterator_t iter;
 
     scene->shaders.clear();
@@ -254,11 +240,7 @@ static void sync_scene(ccl::Scene *scene, int w, int h)
     ccl::Light *light;
 
     light = new ccl::Light();
-    light->type = ccl::LIGHT_DISTANT;
-    light->size = 0.01f;
-    get_light_dir(light_dir);
-    light->dir = ccl::make_float3(light_dir[0], light_dir[1], light_dir[2]);
-    light->tag_update(scene);
+
     ccl::Shader *light_shader = create_light_shader();
     light_shader->tag_update(scene);
     scene->shaders.push_back(light_shader);
@@ -333,14 +315,16 @@ static bool sync_lights(int w, int h)
     float light_dir[3];
     ccl::Light *light;
     ccl::Scene *scene = g_session->scene;
+    render_get_light_dir(&goxel->rend, light_dir);
 
     key = crc64(0, (uint8_t*)&goxel->rend.light, sizeof(goxel->rend.light));
+    key = crc64(key, (uint8_t*)light_dir, sizeof(light_dir));
     if (key == last_key) return false;
 
     light = scene->lights[0];
+    light->type = ccl::LIGHT_DISTANT;
     light->size = 0.01f;
-    get_light_dir(light_dir);
-    light->dir = ccl::make_float3(light_dir[0], light_dir[1], light_dir[2]);
+    light->dir = ccl::make_float3(-light_dir[0], -light_dir[1], -light_dir[2]);
     light->tag_update(scene);
     g_session->reset(g_buffer_params, g_session_params.samples);
     last_key = key;
