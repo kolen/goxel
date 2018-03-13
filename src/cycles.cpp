@@ -317,7 +317,8 @@ static bool sync_lights(int w, int h)
     ccl::Scene *scene = g_session->scene;
     render_get_light_dir(&goxel->rend, light_dir);
 
-    key = crc64(0, (uint8_t*)&goxel->rend.light, sizeof(goxel->rend.light));
+    key = mesh_get_key(goxel->render_mesh);
+    key = crc64(key, (uint8_t*)&goxel->rend.light, sizeof(goxel->rend.light));
     key = crc64(key, (uint8_t*)light_dir, sizeof(light_dir));
     if (key == last_key) return false;
 
