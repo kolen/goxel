@@ -126,8 +126,9 @@ env.Append(CPPFLAGS=[
     '-DWITH_GLEW_MX',
 ])
 env.Append(CPPFLAGS=['-Wno-sign-compare', '-Wno-strict-aliasing',
-                     '-Wno-uninitialized', '-Wno-overloaded-virtual'])
-env.Append(LIBS=['glut'])
+                     '-Wno-uninitialized'])
+if clang:
+    env.Append(CPPFLAGS=['-Wno-overloaded-virtual'])
 
 
 if target_os == 'posix':
