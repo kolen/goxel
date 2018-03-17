@@ -188,11 +188,6 @@ static void sync_scene(ccl::Scene *scene, int w, int h)
     int block_pos[3];
     mesh_iterator_t iter;
 
-    scene->shaders.clear();
-    scene->meshes.clear();
-    scene->objects.clear();
-    scene->lights.clear();
-
     scene->camera->width = w;
     scene->camera->height = h;
     scene->camera->fov = 20.0 * DD2R;
@@ -412,4 +407,11 @@ void cycles_render(const int rect[4])
     std::string status;
     std::string substatus;
     g_session->progress.get_status(status, substatus);
+}
+
+void cycles_release(void)
+{
+    if (!g_session) return;
+    delete g_session;
+    g_session = NULL;
 }

@@ -333,6 +333,7 @@ void goxel_init(goxel_t *gox)
 
 void goxel_release(goxel_t *goxel)
 {
+    cycles_release();
     proc_release(&goxel->proc);
     gui_release();
 }
