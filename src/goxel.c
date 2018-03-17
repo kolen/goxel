@@ -558,6 +558,26 @@ static void render_export_viewport(goxel_t *goxel, const float viewport[4])
     render_rect(&goxel->rend, plane, EFFECT_STRIP);
 }
 
+static void render_view_cycles(const float viewport[4])
+{
+    float scale = goxel->screen_scale;
+    // XXX: I would much rather have cycles render into a texture, and
+    // then render it myself!
+    int rect[4] = {(int)viewport[0],
+                   (int)(goxel->screen_size[1] - viewport[1] - viewport[3]),
+                   (int)viewport[2],
+                   (int)viewport[3]};
+    GL(glBindFramebuffer(GL_FRAMEBUFFER, goxel->rend.fbo));
+    GL(glEnable(GL_SCISSOR_TEST));
+    GL(glEnable(GL_SCISSOR_TEST));
+    GL(glViewport(rect[0] * scale, rect[1] * scale,
+                  rect[2] * scale, rect[3] * scale));
+    GL(glScissor(rect[0] * scale, rect[1] * scale,
+                  rect[2] * scale, rect[3] * scale));
+    GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+    cycles_render(rect);
+}
+
 void goxel_render_view(goxel_t *goxel, const float viewport[4])
 {
     layer_t *layer;
@@ -566,6 +586,11 @@ void goxel_render_view(goxel_t *goxel, const float viewport[4])
 
     goxel->camera.aspect = viewport[2] / viewport[3];
     camera_update(&goxel->camera);
+
+    if (goxel->use_cycles) {
+        render_view_cycles(viewport);
+        return;
+    }
 
     render_mesh(rend, goxel->render_mesh, 0);
     if (!box_is_null(goxel->image->active_layer->box))
@@ -601,8 +626,16 @@ void goxel_render_view(goxel_t *goxel, const float viewport[4])
     if (!box_is_null(goxel->image->box))
         render_box(rend, goxel->image->box, goxel->image_box_color,
                    EFFECT_SEE_BACK);
+
     if (goxel->show_export_viewport)
         render_export_viewport(goxel, viewport);
+
+    // XXX: cleanup this!
+    int rect[4] = {(int)viewport[0],
+                   (int)(goxel->screen_size[1] - viewport[1] - viewport[3]),
+                   (int)viewport[2],
+                   (int)viewport[3]};
+    render_submit(&goxel->rend, rect, goxel->back_color);
 }
 
 void image_update(image_t *img);

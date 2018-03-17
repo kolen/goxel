@@ -536,25 +536,7 @@ void render_view(const ImDrawList* parent_list, const ImDrawCmd* cmd)
     view_t *view = (view_t*)cmd->UserCallbackData;
     const float width = ImGui::GetIO().DisplaySize.x;
     const float height = ImGui::GetIO().DisplaySize.y;
-    int rect[4] = {(int)view->rect[0],
-                   (int)(height - view->rect[1] - view->rect[3]),
-                   (int)view->rect[2],
-                   (int)view->rect[3]};
-    if (!goxel->use_cycles) {
-        goxel_render_view(goxel, view->rect);
-        render_submit(&goxel->rend, rect, goxel->back_color);
-    } else {
-        // XXX: cycle rendering should be done in goxel_render_view.
-        GL(glBindFramebuffer(GL_FRAMEBUFFER, goxel->rend.fbo));
-        GL(glEnable(GL_SCISSOR_TEST));
-        GL(glEnable(GL_SCISSOR_TEST));
-        GL(glViewport(rect[0] * scale, rect[1] * scale,
-                      rect[2] * scale, rect[3] * scale));
-        GL(glScissor(rect[0] * scale, rect[1] * scale,
-                     rect[2] * scale, rect[3] * scale));
-        GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-        cycles_render(rect);
-    }
+    goxel_render_view(goxel, view->rect);
     GL(glViewport(0, 0, width * scale, height * scale));
 }
 
@@ -935,6 +917,11 @@ static void export_panel(goxel_t *goxel)
 {
     int i;
     int maxsize;
+
+    ImGui::Checkbox("Cycles", &gui->use_cycles);
+    goxel->use_cycles = gui->use_cycles;
+    goxel->no_edit = goxel->use_cycles;
+
     GL(glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxsize));
     maxsize /= 2; // Because png export already double it.
     goxel->show_export_viewport = true;
