@@ -164,7 +164,10 @@ public:
 	 * (for example, when rendering with unlimited samples). */
 	float get_progress();
 
-protected:
+// XXX: I make it all public so that I can access the display_mutex
+// from goxel.
+// protected:
+public:
 	struct DelayedReset {
 		thread_mutex mutex;
 		bool do_reset;

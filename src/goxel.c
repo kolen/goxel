@@ -575,7 +575,32 @@ static void render_view_cycles(const float viewport[4])
     GL(glScissor(rect[0] * scale, rect[1] * scale,
                   rect[2] * scale, rect[3] * scale));
     GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-    cycles_render(rect);
+
+    int w = rect[2];
+    int h = rect[3];
+    uint8_t *buf = calloc(4, w * h);
+    /*
+    for (int i = 0; i < w * h; i++) {
+        buf[i * 4 + 0] = 255;
+        buf[i * 4 + 1] = 0;
+        buf[i * 4 + 2] = 0;
+        buf[i * 4 + 3] = 255;
+    }
+    */
+    cycles_render(rect, buf, &w, &h);
+    // LOG_D("XXX %d %d %d %d", buf[0], buf[1], buf[2], buf[3]);
+    /*
+    for (int i = 0; i < w * h; i++) {
+        buf[i * 4 + 0] = 255;
+        buf[i * 4 + 1] = 0;
+        buf[i * 4 + 2] = 0;
+        buf[i * 4 + 3] = 255;
+    }
+    */
+    render_img2(&goxel->rend, buf, w, h, 4, NULL, EFFECT_NO_SHADING);
+    free(buf);
+
+    render_submit(&goxel->rend, rect, goxel->back_color);
 }
 
 void goxel_render_view(goxel_t *goxel, const float viewport[4])

@@ -788,6 +788,15 @@ void render_box(renderer_t *rend, const float box[4][4],
 void render_sphere(renderer_t *rend, const float mat[4][4]);
 void render_img(renderer_t *rend, texture_t *tex, const float mat[4][4],
                 int efffects);
+
+/*
+ * Function: render_img2
+ * Render an image directly from it's pixel data.
+ */
+void render_img2(renderer_t *rend,
+                 const uint8_t *data, int w, int h, int bpp,
+                 const float mat[4][4], int effects);
+
 void render_rect(renderer_t *rend, const float plane[4][4], int effects);
 // Flushes all the queued render items.  Actually calls opengl.
 //  rect: the viewport rect (passed to glViewport).
@@ -1480,7 +1489,7 @@ void sound_iter(void);
 // Section: cycles
 void cycles_init(void);
 void cycles_release(void);
-void cycles_render(const int rect[4]);
+void cycles_render(const int rect[4], uint8_t *buffer, int *w, int *h);
 
 // Section: tests
 

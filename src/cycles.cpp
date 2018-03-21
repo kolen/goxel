@@ -29,6 +29,7 @@
 #include "render/shader.h"
 #include "util/util_transform.h"
 #include "util/util_foreach.h"
+#include "device/device_memory.h"
 
 #include <memory> // for make_unique
 
@@ -269,7 +270,7 @@ void cycles_init(void)
     g_session_params.start_resolution = 64;
     g_session_params.device = device_info;
     g_session_params.samples = 20;
-    // session_params.threads = 1;
+    g_session_params.threads = 1;
 }
 
 static bool sync_mesh(int w, int h)
@@ -379,16 +380,14 @@ static bool sync(int w, int h)
     return true;
 }
 
-void cycles_render(const int rect[4])
+void cycles_render(const int rect[4], uint8_t *buffer, int *w, int *h)
 {
     static ccl::DeviceDrawParams draw_params = ccl::DeviceDrawParams();
-    int w = rect[2];
-    int h = rect[3];
 
-    g_buffer_params.width = w;
-    g_buffer_params.height = h;
-    g_buffer_params.full_width = w;
-    g_buffer_params.full_height = h;
+    g_buffer_params.width = *w;
+    g_buffer_params.height = *h;
+    g_buffer_params.full_width = *w;
+    g_buffer_params.full_height = *h;
 
     GL(glViewport(rect[0], rect[1], rect[2], rect[3]));
     GL(glMatrixMode(GL_PROJECTION));
@@ -399,10 +398,16 @@ void cycles_render(const int rect[4])
     GL(glLoadIdentity());
     GL(glUseProgram(0));
 
-    sync(w, h);
+    sync(*w, *h);
     if (!g_session) return;
 
-    g_session->draw(g_buffer_params, draw_params);
+    std::unique_lock<std::mutex> lock(g_session->display_mutex);
+    if (!g_session->display->draw_ready()) return;
+
+    *w = g_session->display->draw_width;
+    *h = g_session->display->draw_height;
+    uint8_t *rgba = (uint8_t*)g_session->display->rgba_byte.host_pointer;
+    memcpy(buffer, rgba, (*w) * (*h) * 4);
 
     std::string status;
     std::string substatus;
