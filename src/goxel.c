@@ -560,16 +560,14 @@ static void render_export_viewport(goxel_t *goxel, const float viewport[4])
 
 static void render_view_cycles(const float viewport[4])
 {
-    // XXX: I would much rather have cycles render into a texture, and
-    // then render it myself!
     int rect[4] = {(int)viewport[0],
                    (int)(goxel->screen_size[1] - viewport[1] - viewport[3]),
                    (int)viewport[2],
                    (int)viewport[3]};
-    int w = rect[2];
-    int h = rect[3];
+    int w = viewport[2];
+    int h = viewport[3];
     uint8_t *buf = calloc(4, w * h);
-    cycles_render(rect, buf, &w, &h);
+    cycles_render(buf, &w, &h);
     render_img2(&goxel->rend, buf, w, h, 4, NULL, EFFECT_NO_SHADING);
     free(buf);
     render_submit(&goxel->rend, rect, goxel->back_color);

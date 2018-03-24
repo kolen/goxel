@@ -380,7 +380,7 @@ static bool sync(int w, int h)
     return true;
 }
 
-void cycles_render(const int rect[4], uint8_t *buffer, int *w, int *h)
+void cycles_render(uint8_t *buffer, int *w, int *h)
 {
     static ccl::DeviceDrawParams draw_params = ccl::DeviceDrawParams();
 
@@ -388,15 +388,6 @@ void cycles_render(const int rect[4], uint8_t *buffer, int *w, int *h)
     g_buffer_params.height = *h;
     g_buffer_params.full_width = *w;
     g_buffer_params.full_height = *h;
-
-    GL(glViewport(rect[0], rect[1], rect[2], rect[3]));
-    GL(glMatrixMode(GL_PROJECTION));
-    GL(glLoadIdentity());
-
-    GL(glOrtho(0, g_buffer_params.width, 0, g_buffer_params.height, -1, 1));
-    GL(glMatrixMode(GL_MODELVIEW));
-    GL(glLoadIdentity());
-    GL(glUseProgram(0));
 
     sync(*w, *h);
     if (!g_session) return;
