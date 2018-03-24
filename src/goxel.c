@@ -560,46 +560,18 @@ static void render_export_viewport(goxel_t *goxel, const float viewport[4])
 
 static void render_view_cycles(const float viewport[4])
 {
-    float scale = goxel->screen_scale;
     // XXX: I would much rather have cycles render into a texture, and
     // then render it myself!
     int rect[4] = {(int)viewport[0],
                    (int)(goxel->screen_size[1] - viewport[1] - viewport[3]),
                    (int)viewport[2],
                    (int)viewport[3]};
-    GL(glBindFramebuffer(GL_FRAMEBUFFER, goxel->rend.fbo));
-    GL(glEnable(GL_SCISSOR_TEST));
-    GL(glEnable(GL_SCISSOR_TEST));
-    GL(glViewport(rect[0] * scale, rect[1] * scale,
-                  rect[2] * scale, rect[3] * scale));
-    GL(glScissor(rect[0] * scale, rect[1] * scale,
-                  rect[2] * scale, rect[3] * scale));
-    GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-
     int w = rect[2];
     int h = rect[3];
     uint8_t *buf = calloc(4, w * h);
-    /*
-    for (int i = 0; i < w * h; i++) {
-        buf[i * 4 + 0] = 255;
-        buf[i * 4 + 1] = 0;
-        buf[i * 4 + 2] = 0;
-        buf[i * 4 + 3] = 255;
-    }
-    */
     cycles_render(rect, buf, &w, &h);
-    // LOG_D("XXX %d %d %d %d", buf[0], buf[1], buf[2], buf[3]);
-    /*
-    for (int i = 0; i < w * h; i++) {
-        buf[i * 4 + 0] = 255;
-        buf[i * 4 + 1] = 0;
-        buf[i * 4 + 2] = 0;
-        buf[i * 4 + 3] = 255;
-    }
-    */
     render_img2(&goxel->rend, buf, w, h, 4, NULL, EFFECT_NO_SHADING);
     free(buf);
-
     render_submit(&goxel->rend, rect, goxel->back_color);
 }
 
