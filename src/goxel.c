@@ -567,7 +567,7 @@ static void render_view_cycles(const float viewport[4])
     int w = viewport[2];
     int h = viewport[3];
     uint8_t *buf = calloc(4, w * h);
-    cycles_render(buf, &w, &h);
+    cycles_render(buf, &w, &h, &goxel->camera);
     render_img2(&goxel->rend, buf, w, h, 4, NULL, EFFECT_NO_SHADING);
     free(buf);
     render_submit(&goxel->rend, rect, goxel->back_color);
@@ -676,10 +676,11 @@ void goxel_render_to_buf(uint8_t *buf, int w, int h, int bpp)
     uint8_t clear_color[4] = {0, 0, 0, 0};
 
     camera.aspect = (float)w / h;
+    camera_update(&camera);
+
     mesh = goxel->layers_mesh;
     fbo = texture_new_buffer(w * 2, h * 2, TF_DEPTH);
 
-    camera_update(&camera);
     mat4_copy(camera.view_mat, rend.view_mat);
     mat4_copy(camera.proj_mat, rend.proj_mat);
     rend.fbo = fbo->framebuffer;
@@ -687,7 +688,7 @@ void goxel_render_to_buf(uint8_t *buf, int w, int h, int bpp)
 
     render_mesh(&rend, mesh, 0);
     render_submit(&rend, rect, clear_color);
-    tmp_buf = calloc(w * h * bpp , bpp);
+    tmp_buf = calloc(w * h, bpp);
     texture_get_data(fbo, w * 2, h * 2, bpp, tmp_buf);
     img_downsample(tmp_buf, w * 2, h * 2, bpp, buf);
     free(tmp_buf);

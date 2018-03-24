@@ -1337,10 +1337,10 @@ void gui_iter(goxel_t *goxel, const inputs_t *inputs)
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::Begin("Goxel", NULL, window_flags);
 
+    render_menu();
+
     goxel->no_edit = false; // Set depending on what panel is selected.
     goxel->use_cycles = false;  // Also set depending on the panel.
-
-    render_menu();
     render_left_panel();
     ImGui::SameLine();
 

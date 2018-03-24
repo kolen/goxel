@@ -197,23 +197,6 @@ static void sync_scene(ccl::Scene *scene, int w, int h)
     scene->camera->full_height = scene->camera->height;
     scene->film->exposure = 1.0f;
 
-    // Set camera.
-    // XXX: cleanup!
-    float mat[4][4];
-    float rot[4];
-    assert(sizeof(scene->camera->matrix) == sizeof(mat));
-    mat4_set_identity(mat);
-    mat4_itranslate(mat, -goxel->camera.ofs[0],
-                         -goxel->camera.ofs[1],
-                         -goxel->camera.ofs[2]);
-    quat_copy(goxel->camera.rot, rot);
-    rot[0] *= -1;
-    mat4_imul_quat(mat, rot);
-    mat4_itranslate(mat, 0, 0, goxel->camera.dist);
-    mat4_iscale(mat, 1, 1, -1);
-    mat4_transpose(mat, mat);
-    memcpy(&scene->camera->matrix, mat, sizeof(mat));
-
     ccl::Shader *object_shader = create_cube_shader();
     object_shader->tag_update(scene);
     scene->shaders.push_back(object_shader);
@@ -328,11 +311,10 @@ static bool sync_lights(int w, int h)
     return true;
 }
 
-static bool sync_camera(int w, int h)
+static bool sync_camera(int w, int h, const camera_t *camera)
 {
     static uint64_t last_key = 0;
     uint64_t key;
-    const camera_t *camera = &goxel->camera;
     ccl::Scene *scene;
     float mat[4][4];
     float rot[4];
@@ -353,13 +335,13 @@ static bool sync_camera(int w, int h)
     scene->camera->full_height = scene->camera->height;
     assert(sizeof(scene->camera->matrix) == sizeof(mat));
     mat4_set_identity(mat);
-    mat4_itranslate(mat, -goxel->camera.ofs[0],
-                         -goxel->camera.ofs[1],
-                         -goxel->camera.ofs[2]);
-    quat_copy(goxel->camera.rot, rot);
+    mat4_itranslate(mat, -camera->ofs[0],
+                         -camera->ofs[1],
+                         -camera->ofs[2]);
+    quat_copy(camera->rot, rot);
     rot[0] *= -1;
     mat4_imul_quat(mat, rot);
-    mat4_itranslate(mat, 0, 0, goxel->camera.dist);
+    mat4_itranslate(mat, 0, 0, camera->dist);
     mat4_iscale(mat, 1, 1, -1);
     mat4_transpose(mat, mat);
     memcpy(&scene->camera->matrix, mat, sizeof(mat));
@@ -372,15 +354,15 @@ static bool sync_camera(int w, int h)
     return true;
 }
 
-static bool sync(int w, int h)
+static bool sync(int w, int h, const camera_t *cam)
 {
     sync_mesh(w, h);
     sync_lights(w, h);
-    sync_camera(w, h);
+    sync_camera(w, h, cam);
     return true;
 }
 
-void cycles_render(uint8_t *buffer, int *w, int *h)
+void cycles_render(uint8_t *buffer, int *w, int *h, const camera_t *cam)
 {
     static ccl::DeviceDrawParams draw_params = ccl::DeviceDrawParams();
 
@@ -389,7 +371,7 @@ void cycles_render(uint8_t *buffer, int *w, int *h)
     g_buffer_params.full_width = *w;
     g_buffer_params.full_height = *h;
 
-    sync(*w, *h);
+    sync(*w, *h, cam);
     if (!g_session) return;
 
     std::unique_lock<std::mutex> lock(g_session->display_mutex);
