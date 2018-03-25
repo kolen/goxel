@@ -794,7 +794,7 @@ void render_img2(renderer_t *rend,
     item->type = ITEM_MODEL3D;
     mat ? mat4_copy(mat, item->mat) : mat4_set_identity(item->mat);
     mat4_iscale(item->mat, 1, -1, 1);
-    item->proj_screen = !mat;
+    item->proj_screen = effects & EFFECT_PROJ_SCREEN;
     item->tex = texture_copy(tex);
     item->model3d = g_rect_model;
     copy_color(NULL, item->color);

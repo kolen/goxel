@@ -567,10 +567,60 @@ static void render_view_cycles(const float viewport[4])
     int w = viewport[2];
     int h = viewport[3];
     uint8_t *buf = calloc(4, w * h);
-    cycles_render(buf, &w, &h, &goxel->camera);
+    cycles_render(buf, &w, &h, &goxel->camera, NULL);
     render_img2(&goxel->rend, buf, w, h, 4, NULL, EFFECT_NO_SHADING);
     free(buf);
     render_submit(&goxel->rend, rect, goxel->back_color);
+}
+
+void goxel_render_export_view(const float viewport[4])
+{
+    typeof(goxel->export_task) *task = &goxel->export_task;
+    int i, w, h, bpp = 4;
+    uint8_t *tmp;
+    float a, mat[4][4];
+    int rect[4] = {(int)viewport[0],
+                   (int)(goxel->screen_size[1] - viewport[1] - viewport[3]),
+                   (int)viewport[2],
+                   (int)viewport[3]};
+    camera_t camera = goxel->camera;
+
+    // Recreate the buffer if needed.
+    if (    !task->buf ||
+            task->w != goxel->image->export_width ||
+            task->h != goxel->image->export_height) {
+        free(task->buf);
+        task->w = goxel->image->export_width;
+        task->h = goxel->image->export_height;
+        task->buf = calloc(task->w * task->h, 4);
+    }
+
+    task->status = 1;
+    w = task->w;
+    h = task->h;
+    camera.aspect = (float)w / h;
+    camera_update(&camera);
+    cycles_render(task->buf, &w, &h, &camera, &task->progress);
+    mat4_set_identity(mat);
+    a = 1.0 * w / h / rect[2] * rect[3];
+    mat4_iscale(mat, min(a, 1.f), min(1.f / a, 1.f), 1);
+    render_img2(&goxel->rend, task->buf, w, h, 4, mat,
+                EFFECT_NO_SHADING | EFFECT_PROJ_SCREEN);
+    render_submit(&goxel->rend, rect, goxel->back_color);
+    if (task->progress == 1) { // Finished.
+        if (*task->output) {
+            tmp = calloc(w * h, bpp);
+            // Flip output y.
+            for (i = 0; i < h; i++) {
+                memcpy(&tmp[i * (size_t)w * bpp],
+                    &task->buf[((size_t)h - i - 1) * (size_t)w * bpp],
+                    bpp * (size_t)w);
+            }
+            img_write(tmp, w, h, bpp, task->output);
+            free(tmp);
+        }
+        task->status = 2;
+    }
 }
 
 void goxel_render_view(goxel_t *goxel, const float viewport[4])

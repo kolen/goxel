@@ -362,7 +362,8 @@ static bool sync(int w, int h, const camera_t *cam)
     return true;
 }
 
-void cycles_render(uint8_t *buffer, int *w, int *h, const camera_t *cam)
+void cycles_render(uint8_t *buffer, int *w, int *h, const camera_t *cam,
+                   float *progress)
 {
     static ccl::DeviceDrawParams draw_params = ccl::DeviceDrawParams();
 
@@ -385,6 +386,7 @@ void cycles_render(uint8_t *buffer, int *w, int *h, const camera_t *cam)
     std::string status;
     std::string substatus;
     g_session->progress.get_status(status, substatus);
+    if (progress) *progress = g_session->progress.get_progress();
 }
 
 void cycles_release(void)

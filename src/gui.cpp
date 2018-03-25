@@ -536,7 +536,13 @@ void render_view(const ImDrawList* parent_list, const ImDrawCmd* cmd)
     view_t *view = (view_t*)cmd->UserCallbackData;
     const float width = ImGui::GetIO().DisplaySize.x;
     const float height = ImGui::GetIO().DisplaySize.y;
-    goxel_render_view(goxel, view->rect);
+    // XXX: 6 here means 'export' panel.  Need to use an enum!
+    if (    gui->current_panel == 6 &&
+            goxel->export_task.status) {
+        goxel_render_export_view(view->rect);
+    } else {
+        goxel_render_view(goxel, view->rect);
+    }
     GL(glViewport(0, 0, width * scale, height * scale));
 }
 
@@ -917,10 +923,9 @@ static void export_panel(goxel_t *goxel)
 {
     int i;
     int maxsize;
+    const char *path;
 
-    ImGui::Checkbox("Cycles", &gui->use_cycles);
-    goxel->use_cycles = gui->use_cycles;
-    goxel->no_edit = goxel->use_cycles;
+    goxel->no_edit = goxel->export_task.status;
 
     GL(glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxsize));
     maxsize /= 2; // Because png export already double it.
@@ -932,7 +937,23 @@ static void export_panel(goxel_t *goxel)
     i = goxel->image->export_height;
     if (gui_input_int("height", &i, 1, maxsize))
         goxel->image->export_height = clamp(i, 1, maxsize);
+    if (gui_button("Set output", 1, 0)) {
+        path = noc_file_dialog_open(NOC_FILE_DIALOG_SAVE, "png\0*.png\0", NULL,
+                                    "untitled.png");
+        if (path) strcpy(goxel->export_task.output, path);
+    }
     gui_group_end();
+
+    if (*goxel->export_task.output)
+        gui_text("%s", goxel->export_task.output);
+
+    if (gui_button("Render", 1, 0))
+        goxel->export_task.status = 1;
+
+    if (goxel->export_task.status) {
+        gui_text("%d/100", (int)(goxel->export_task.progress * 100));
+    }
+
 }
 
 static void image_panel(goxel_t *goxel)
