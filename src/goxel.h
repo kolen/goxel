@@ -744,6 +744,7 @@ enum {
     EFFECT_WIREFRAME        = 1 << 12,
 
     EFFECT_PROJ_SCREEN      = 1 << 13, // Image project in screen.
+    EFFECT_ANTIALIASING     = 1 << 14,
 };
 
 typedef struct {

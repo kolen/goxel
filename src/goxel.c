@@ -606,7 +606,7 @@ void goxel_render_export_view(const float viewport[4])
     a = 1.0 * w / h / rect[2] * rect[3];
     mat4_iscale(mat, min(a, 1.f), min(1.f / a, 1.f), 1);
     render_img2(&goxel->rend, task->buf, w, h, 4, mat,
-                EFFECT_NO_SHADING | EFFECT_PROJ_SCREEN);
+                EFFECT_NO_SHADING | EFFECT_PROJ_SCREEN | EFFECT_ANTIALIASING);
     render_submit(&goxel->rend, rect, goxel->back_color);
     if (task->progress == 1) { // Finished.
         if (*task->output) {
