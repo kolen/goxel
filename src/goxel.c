@@ -568,7 +568,8 @@ static void render_view_cycles(const float viewport[4])
     int h = viewport[3];
     uint8_t *buf = calloc(4, w * h);
     cycles_render(buf, &w, &h, &goxel->camera, NULL);
-    render_img2(&goxel->rend, buf, w, h, 4, NULL, EFFECT_NO_SHADING);
+    render_img2(&goxel->rend, buf, w, h, 4, NULL,
+                EFFECT_NO_SHADING | EFFECT_PROJ_SCREEN);
     free(buf);
     render_submit(&goxel->rend, rect, goxel->back_color);
 }
