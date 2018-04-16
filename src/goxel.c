@@ -1022,6 +1022,7 @@ ACTION_REGISTER(undo,
     .cfunc = undo,
     .csig = "v",
     .shortcut = "Ctrl Z",
+    .icon = ICON_ARROW_BACK,
 )
 
 ACTION_REGISTER(redo,
@@ -1029,4 +1030,5 @@ ACTION_REGISTER(redo,
     .cfunc = redo,
     .csig = "v",
     .shortcut = "Ctrl Y",
+    .icon = ICON_ARROW_FORWARD,
 )
