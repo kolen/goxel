@@ -22,7 +22,10 @@
 #include <dirent.h>
 #include <errno.h>
 
-#ifdef __linux__
+// The global system instance.
+sys_callbacks_t sys_callbacks = {};
+
+#ifdef __unix__
 #define NOC_FILE_DIALOG_GTK
 #define NOC_FILE_DIALOG_IMPLEMENTATION
 #include "noc_file_dialog.h"
@@ -94,7 +97,16 @@ GLuint sys_get_screen_framebuffer(void)
     return 0;
 }
 
-#ifdef __linux__
+#ifdef __unix__
+
+void sys_set_window_title(const char *title)
+{
+    static char buf[1024] = {};
+    if (strcmp(buf, title) == 0) return;
+    strncpy(buf, title, sizeof(buf));
+    if (sys_callbacks.set_window_title)
+        sys_callbacks.set_window_title(sys_callbacks.user, title);
+}
 
 #include <gtk/gtk.h>
 
