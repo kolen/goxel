@@ -262,7 +262,6 @@ void goxel_init(void)
 
     render_init();
     shapes_init();
-    sound_init();
     model3d_init();
 
     goxel.layers_mesh = mesh_new();
@@ -387,7 +386,6 @@ int goxel_iter(inputs_t *inputs)
     mat4_copy(goxel.camera.view_mat, goxel.rend.view_mat);
     mat4_copy(goxel.camera.proj_mat, goxel.rend.proj_mat);
     gui_iter(inputs);
-    sound_iter();
 
     DL_FOREACH(goxel.modules, module)
         if (module->iter) module->iter(module->user, inputs);

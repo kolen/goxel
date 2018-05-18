@@ -60,9 +60,10 @@ int sound_backend_iter_sound(sound_t *sound);
 void sound_backend_iter(void);
 
 
-void sound_init(void)
+static int sound_init(void *user)
 {
     sound_backend_init();
+    return 0;
 }
 
 bool sound_is_enabled(void)
@@ -154,24 +155,28 @@ void sound_play(const char *name)
     sound_backend_play_sound(sound);
 }
 
-void sound_iter(void)
+int sound_iter(void *user)
 {
     sound_t *sound, *tmp;
     HASH_ITER(hh, g_sounds, sound, tmp) {
         sound->state = sound_backend_iter_sound(sound);
     }
     sound_backend_iter();
+    return 0;
 }
 
 // For the moment the only backend we support is OpenAL.
 #include "sound_openal.inl"
 
+MODULE_REGISTER(sound,
+    .init = sound_init,
+    .iter = sound_iter,
+)
+
 #else
 // Dummy API when we compile without sound support.
 
-void sound_init(void) {}
 void sound_play(const char *sound) {}
-void sound_iter(void) {}
 bool sound_is_enabled(void) { return false; }
 void sound_set_enabled(bool v) {}
 
