@@ -121,7 +121,7 @@ if conf.CheckLibWithHeader('libpng', 'png.h', 'c'):
 
 if sound:
     env.Append(LIBS='openal')
-    env.Append(CCFLAGS='-DSOUND=OPENAL')
+    env.Append(CCFLAGS='-DGOXEL_WITH_SOUND')
 
 if argp_standalone:
     env.Append(LIBS='argp')
@@ -155,7 +155,7 @@ if cycles:
         '-DWITH_CUDA_DYNLOAD',
         '-DWITHOUT_OPENIMAGEIO',
         '-DWITH_GLEW_MX',
-        '-DWITH_CYCLES',
+        '-DGOXEL_WITH_CYCLES',
     ])
     # Try to improve compilation speed on linux.
     if not clang: env.Append(CPPFLAGS='-fno-var-tracking-assignments')

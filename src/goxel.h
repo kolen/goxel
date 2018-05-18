@@ -73,6 +73,15 @@
 #define DEFINED___(_, v, ...) v
 // #############################
 
+// Allow user defined config file.
+#ifdef GOXEL_CONFIG_FILE
+#   include GOXEL_CONFIG_FILE
+#endif
+
+// Set the default enabled config values.
+#ifndef GOXEL_WITH_SHADOW
+#   define GOXEL_WITH_SHADOW 1
+#endif
 
 // #### Logging macros #########
 

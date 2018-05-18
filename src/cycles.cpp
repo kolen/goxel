@@ -16,8 +16,6 @@
  * goxel.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef WITH_CYCLES
-
 #include "device/device.h"
 #include "render/background.h"
 #include "render/camera.h"
@@ -38,6 +36,8 @@
 extern "C" {
 #include "goxel.h"
 }
+
+#if DEFINED(GOXEL_WITH_CYCLES)
 
 // Convenience macro for cycles string creation.
 #define S(v) ccl::ustring(v)

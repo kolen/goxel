@@ -27,7 +27,7 @@
 
 #include "goxel.h"
 
-#ifdef SOUND
+#if DEFINED(GOXEL_WITH_SOUND)
 
 // Abstraction used to represent any kind of sound sources: wav, sfxr, mod.
 typedef struct sound_source {
@@ -175,4 +175,4 @@ void sound_iter(void) {}
 bool sound_is_enabled(void) { return false; }
 void sound_set_enabled(bool v) {}
 
-#endif
+#endif // DEFINED(GOXEL_WITH_SOUND)
