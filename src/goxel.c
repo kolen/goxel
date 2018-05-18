@@ -258,6 +258,8 @@ static int on_hover(const gesture_t *gest, void *user);
 KEEPALIVE
 void goxel_init(void)
 {
+    goxel_module_t *module;
+
     render_init();
     shapes_init();
     sound_init();
@@ -294,6 +296,9 @@ void goxel_init(void)
         .type = GESTURE_HOVER,
         .callback = on_hover,
     };
+
+    DL_FOREACH(goxel.modules, module)
+        if (module->init) module->init(module->user);
 
     goxel_reset();
 }
@@ -364,6 +369,7 @@ static void update_window_title(void)
 KEEPALIVE
 int goxel_iter(inputs_t *inputs)
 {
+    goxel_module_t *module;
     double time = sys_get_time();
     goxel.fps = mix(goxel.fps, 1.0 / (time - goxel.frame_time), 0.1);
     goxel.frame_time = time;
@@ -381,6 +387,10 @@ int goxel_iter(inputs_t *inputs)
     mat4_copy(goxel.camera.proj_mat, goxel.rend.proj_mat);
     gui_iter(inputs);
     sound_iter();
+
+    DL_FOREACH(goxel.modules, module)
+        if (module->iter) module->iter(module->user, inputs);
+
     update_window_title();
 
     goxel.frame_count++;
@@ -559,6 +569,7 @@ void goxel_mouse_in_view(const float viewport[4], const inputs_t *inputs)
 KEEPALIVE
 void goxel_render(void)
 {
+    goxel_module_t *module;
     GL(glViewport(0, 0, goxel.screen_size[0] * goxel.screen_scale,
                         goxel.screen_size[1] * goxel.screen_scale));
     GL(glBindFramebuffer(GL_FRAMEBUFFER, goxel.rend.fbo));
@@ -567,6 +578,9 @@ void goxel_render(void)
     GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT |
                GL_STENCIL_BUFFER_BIT));
     gui_render();
+
+    DL_FOREACH(goxel.modules, module)
+        if (module->render) module->render(module->user);
 }
 
 static void render_export_viewport(const float viewport[4])
@@ -775,6 +789,10 @@ void goxel_render_to_buf(uint8_t *buf, int w, int h, int bpp)
     texture_delete(fbo);
 }
 
+void goxel_register_module(goxel_module_t *module)
+{
+    DL_APPEND(goxel.modules, module);
+}
 
 static void export_as(const char *type, const char *path)
 {

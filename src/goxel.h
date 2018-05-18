@@ -1639,6 +1639,39 @@ int tool_gui_smoothness(void);
 int tool_gui_color(void);
 int tool_gui_symmetry(void);
 
+/*
+ * Type: goxel_module_t
+ * Structure used to keep callbacks hooks that goxel will call during
+ * execution.
+ */
+typedef struct goxel_module goxel_module_t;
+struct goxel_module
+{
+    goxel_module_t *next, *prev;    // For the global list.
+    const char *id;
+    void *user;                     // User data pointer.
+    int (*init)(void *user);
+    int (*iter)(void *user, inputs_t *inputs);
+    int (*render)(void *user);
+};
+
+/*
+ * Function: goxel_register_module
+ * Add a module into the global list.
+ *
+ * If the module is not dynamically created, it is better to use the
+ * MODULE_REGISTER macro instead.
+ */
+void goxel_register_module(goxel_module_t *module);
+
+#define MODULE_REGISTER(id_, ...) \
+    static goxel_module_t GOX_module_##id_ = { .id = #id_, __VA_ARGS__}; \
+    static void GOX_register_module_##id_(void) __attribute__((constructor)); \
+    static void GOX_register_module_##id_(void) { \
+        goxel_register_module(&GOX_module_##id_); \
+    }
+
+
 typedef struct goxel
 {
     int        screen_size[2];
@@ -1720,6 +1753,8 @@ typedef struct goxel
         float progress;
         bool force_restart;
     } render_task;
+
+    goxel_module_t *modules;
 
 } goxel_t;
 
