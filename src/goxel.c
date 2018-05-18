@@ -353,7 +353,6 @@ void goxel_release(void)
 {
     goxel_module_t *module;
     proc_release(&goxel.proc);
-    gui_release();
     DL_FOREACH(goxel.modules, module)
         if (module->release) module->release(module->user);
 }
@@ -385,7 +384,6 @@ int goxel_iter(inputs_t *inputs)
         camera_set(goxel.image->active_camera, &goxel.camera);
     mat4_copy(goxel.camera.view_mat, goxel.rend.view_mat);
     mat4_copy(goxel.camera.proj_mat, goxel.rend.proj_mat);
-    gui_iter(inputs);
 
     DL_FOREACH(goxel.modules, module)
         if (module->iter) module->iter(module->user, inputs);
@@ -576,7 +574,6 @@ void goxel_render(void)
     GL(glStencilMask(0xFF));
     GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT |
                GL_STENCIL_BUFFER_BIT));
-    gui_render();
 
     DL_FOREACH(goxel.modules, module)
         if (module->render) module->render(module->user);

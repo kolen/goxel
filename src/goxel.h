@@ -1661,7 +1661,7 @@ struct goxel_module
     void *user;                     // User data pointer.
     int (*init)(void *user);
     int (*release)(void *user);
-    int (*iter)(void *user, inputs_t *inputs);
+    int (*iter)(void *user, const inputs_t *inputs);
     int (*render)(void *user);
 };
 

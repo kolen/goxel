@@ -425,9 +425,10 @@ static void gui_init(const inputs_t *inputs)
     GL(glBindTexture(GL_TEXTURE_2D, g_tex_icons->tex));
 }
 
-void gui_release(void)
+static int gui_release(void *user)
 {
     ImGui::DestroyContext();
+    return 0;
 }
 
 // XXX: Move this somewhere else.
@@ -1319,7 +1320,7 @@ static void render_popups(int index)
     }
 }
 
-void gui_iter(const inputs_t *inputs)
+static int gui_iter(void *user, const inputs_t *inputs)
 {
     if (!gui) gui_init(inputs);
     unsigned int i;
@@ -1464,12 +1465,14 @@ void gui_iter(const inputs_t *inputs)
         actions_iter(check_action_shortcut, NULL);
     }
     ImGui::EndFrame();
+    return 0;
 }
 
-void gui_render(void)
+static int gui_render(void *user)
 {
     ImGui::Render();
     ImImpl_RenderDrawLists(ImGui::GetDrawData());
+    return 0;
 }
 
 extern "C" {
@@ -1994,4 +1997,15 @@ void gui_pop_id(void)
     ImGui::PopID();
 }
 
+}
+
+// We should use MODULE_REGISTER, but it is not supported by C++.
+static void register_module(void) __attribute__((constructor));
+static void register_module(void) {
+    static goxel_module_t module = {};
+    module.id = "gui";
+    module.release = gui_release;
+    module.iter = gui_iter;
+    module.render = gui_render;
+    goxel_register_module(&module);
 }
