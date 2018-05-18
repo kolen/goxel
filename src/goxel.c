@@ -263,7 +263,6 @@ void goxel_init(void)
     render_init();
     shapes_init();
     sound_init();
-    cycles_init();
     model3d_init();
 
     goxel.layers_mesh = mesh_new();
@@ -353,9 +352,11 @@ void goxel_reset(void)
 
 void goxel_release(void)
 {
-    cycles_release();
+    goxel_module_t *module;
     proc_release(&goxel.proc);
     gui_release();
+    DL_FOREACH(goxel.modules, module)
+        if (module->release) module->release(module->user);
 }
 
 static void update_window_title(void)

@@ -1660,6 +1660,7 @@ struct goxel_module
     const char *id;
     void *user;                     // User data pointer.
     int (*init)(void *user);
+    int (*release)(void *user);
     int (*iter)(void *user, inputs_t *inputs);
     int (*render)(void *user);
 };
@@ -1937,8 +1938,6 @@ bool sound_is_enabled(void);
 void sound_set_enabled(bool v);
 
 // Section: cycles
-void cycles_init(void);
-void cycles_release(void);
 void cycles_render(uint8_t *buffer, int *w, int *h, const camera_t *cam,
                    float *progress, bool force_restart);
 

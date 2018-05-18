@@ -266,7 +266,7 @@ static void sync_scene(ccl::Scene *scene, int w, int h)
     scene->camera->need_device_update = true;
 }
 
-void cycles_init(void)
+static int cycles_init(void *user)
 {
     ccl::DeviceType device_type;
     ccl::DeviceInfo device_info;
@@ -284,6 +284,7 @@ void cycles_init(void)
     g_session_params.device = device_info;
     g_session_params.samples = 20;
     // g_session_params.threads = 1;
+    return 0;
 }
 
 static bool sync_mesh(int w, int h, bool force)
@@ -428,20 +429,29 @@ void cycles_render(uint8_t *buffer, int *w, int *h, const camera_t *cam,
     if (progress) *progress = g_session->progress.get_progress();
 }
 
-void cycles_release(void)
+static int cycles_release(void *user)
 {
-    if (!g_session) return;
     delete g_session;
     g_session = NULL;
+    return 0;
 }
+
+// We should use MODULE_REGISTER, but it doesn't work from C++ !
+static void register_module(void) __attribute__((constructor));
+static void register_module(void) {
+    static goxel_module_t module = {};
+    module.id = "cycles";
+    module.init = cycles_init;
+    module.release = cycles_release;
+    goxel_register_module(&module);
+}
+
 
 #else
 // Dummy implementations.
 extern "C" {
 #include "goxel.h"
 }
-void cycles_init(void) {}
-void cycles_release(void) {}
 void cycles_render(uint8_t *buffer, int *w, int *h, const camera_t *cam,
                    float *progress, bool force_restart) {}
 
