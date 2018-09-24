@@ -1076,6 +1076,21 @@ static int check_action_shortcut(action_t *action, void *user)
         s += strlen("Ctrl ");
         check_char = false;
     }
+    if (io.KeyAlt) {
+        if (!str_startswith(s, "Alt")) return 0;
+        s += strlen("Alt ");
+        check_char = false;
+    }
+    if (io.KeySuper) {
+        if (str_startswith(s, "Super")) {
+            s += strlen("Super ");
+        } else if (str_startswith(s, "Cmd")) {
+            s += strlen("Cmd ");
+        } else {
+            return 0;
+        }
+        check_char = false;
+    }
     if (io.KeyShift) {
         check_key = false;
     }
