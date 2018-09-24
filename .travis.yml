@@ -16,6 +16,8 @@ matrix:
       compiler: clang
     - os: osx
       osx_image: xcode9.2
+    - os: osx
+      osx_image: xcode10
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
